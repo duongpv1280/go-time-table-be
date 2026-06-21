@@ -5,6 +5,7 @@ package di
 
 import (
 	"gosample/internal/delivery/http/handlers"
+	"gosample/internal/infrastructure/config"
 	"gosample/internal/infrastructure/db"
 	usecase "gosample/internal/usecase/user"
 
@@ -31,9 +32,15 @@ var UserSet = wire.NewSet(
 	handlers.NewUserHandler,
 )
 
+func provideDBPath(cfg *config.Config) string {
+	return cfg.DBPath
+}
+
 // InitializeApp resolves database connection, repository, usecase, and handler.
 func InitializeApp() (*Application, error) {
 	wire.Build(
+		config.Load,
+		provideDBPath,
 		db.NewDatabase,
 		UserSet,
 		NewApplication,

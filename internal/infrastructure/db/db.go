@@ -8,9 +8,8 @@ import (
 )
 
 // NewDatabase initializes a GORM SQLite connection and runs auto-migrations.
-func NewDatabase() (*gorm.DB, error) {
-	// Using in-memory sqlite for testing/development or a local file
-	db, err := gorm.Open(sqlite.Open("gorm.db"), &gorm.Config{})
+func NewDatabase(dbPath string) (*gorm.DB, error) {
+	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}

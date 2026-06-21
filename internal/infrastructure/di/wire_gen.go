@@ -10,6 +10,7 @@ import (
 	"github.com/google/wire"
 	"gorm.io/gorm"
 	"gosample/internal/delivery/http/handlers"
+	"gosample/internal/infrastructure/config"
 	"gosample/internal/infrastructure/db"
 	"gosample/internal/usecase/user"
 )
@@ -18,7 +19,12 @@ import (
 
 // InitializeApp resolves database connection, repository, usecase, and handler.
 func InitializeApp() (*Application, error) {
-	gormDB, err := db.NewDatabase()
+	configConfig, err := config.Load()
+	if err != nil {
+		return nil, err
+	}
+	string2 := provideDBPath(configConfig)
+	gormDB, err := db.NewDatabase(string2)
 	if err != nil {
 		return nil, err
 	}
@@ -45,3 +51,7 @@ func NewApplication(db2 *gorm.DB, handler *handlers.UserHandler) *Application {
 
 // UserSet bundles all providers for the User component.
 var UserSet = wire.NewSet(db.NewGormUserRepository, user.NewUserUseCase, handlers.NewUserHandler)
+
+func provideDBPath(cfg *config.Config) string {
+	return cfg.DBPath
+}
