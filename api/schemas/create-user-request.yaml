@@ -1,0 +1,12 @@
+type: object
+required:
+  - email
+  - name
+properties:
+  email:
+    type: string
+    format: email
+    example: john.doe@example.com
+  name:
+    type: string
+    example: John Doe

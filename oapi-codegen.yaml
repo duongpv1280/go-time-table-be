@@ -1,0 +1,5 @@
+package: http
+generate:
+  echo-server: true
+  models: true
+output: internal/delivery/http/api.gen.go

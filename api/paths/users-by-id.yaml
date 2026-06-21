@@ -1,0 +1,59 @@
+get:
+  summary: Get user by ID
+  operationId: getUser
+  tags:
+    - users
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    '200':
+      description: User details
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/user.yaml'
+    '404':
+      description: User not found
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/error-response.yaml'
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/error-response.yaml'
+
+delete:
+  summary: Delete user by ID
+  operationId: deleteUser
+  tags:
+    - users
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    '204':
+      description: User deleted successfully
+    '404':
+      description: User not found
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/error-response.yaml'
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/error-response.yaml'

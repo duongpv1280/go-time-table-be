@@ -1,0 +1,25 @@
+type: object
+required:
+  - id
+  - email
+  - name
+  - createdAt
+  - updatedAt
+properties:
+  id:
+    type: string
+    format: uuid
+    example: 123e4567-e89b-12d3-a456-426614174000
+  email:
+    type: string
+    format: email
+    example: john.doe@example.com
+  name:
+    type: string
+    example: John Doe
+  createdAt:
+    type: string
+    format: date-time
+  updatedAt:
+    type: string
+    format: date-time

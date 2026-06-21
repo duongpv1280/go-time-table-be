@@ -1,0 +1,22 @@
+openapi: 3.0.3
+info:
+  title: Go Sample CRUD API
+  version: 1.0.0
+  description: A sample CRUD API using Clean Architecture and DDD
+paths:
+  /users:
+    $ref: './paths/users.yaml'
+  /users/{id}:
+    $ref: './paths/users-by-id.yaml'
+components:
+  schemas:
+    User:
+      $ref: './schemas/user.yaml'
+    ErrorResponse:
+      $ref: './schemas/error-response.yaml'
+    Pagination:
+      $ref: './schemas/pagination.yaml'
+    ListUsersResponse:
+      $ref: './schemas/list-users-response.yaml'
+    CreateUserRequest:
+      $ref: './schemas/create-user-request.yaml'

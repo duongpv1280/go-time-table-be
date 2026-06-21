@@ -1,0 +1,15 @@
+type: object
+required:
+  - page
+  - perPage
+  - total
+properties:
+  page:
+    type: integer
+    example: 1
+  perPage:
+    type: integer
+    example: 20
+  total:
+    type: integer
+    example: 100
