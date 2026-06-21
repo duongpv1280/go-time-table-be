@@ -12,6 +12,38 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for GoogleAuth200JSONResponseBodyRole.
+const (
+	ADMIN   GoogleAuth200JSONResponseBodyRole = "ADMIN"
+	STUDENT GoogleAuth200JSONResponseBodyRole = "STUDENT"
+	TEACHER GoogleAuth200JSONResponseBodyRole = "TEACHER"
+)
+
+// Valid indicates whether the value is a known member of the GoogleAuth200JSONResponseBodyRole enum.
+func (e GoogleAuth200JSONResponseBodyRole) Valid() bool {
+	switch e {
+	case ADMIN:
+		return true
+	case STUDENT:
+		return true
+	case TEACHER:
+		return true
+	default:
+		return false
+	}
+}
+
+// bearerAuthContextKey is the context key for BearerAuth security scheme
+type bearerAuthContextKey string
+
+// GoogleAuthJSONBody defines parameters for GoogleAuth.
+type GoogleAuthJSONBody struct {
+	IdToken string `json:"idToken"`
+}
+
+// GoogleAuth200JSONResponseBodyRole defines parameters for GoogleAuth.
+type GoogleAuth200JSONResponseBodyRole string
+
 // ListUsersParams defines parameters for ListUsers.
 type ListUsersParams struct {
 	Page    *int `form:"page,omitempty" json:"page,omitempty"`
@@ -24,11 +56,17 @@ type CreateUserJSONBody struct {
 	Name  string              `json:"name"`
 }
 
+// GoogleAuthJSONRequestBody defines body for GoogleAuth for application/json ContentType.
+type GoogleAuthJSONRequestBody GoogleAuthJSONBody
+
 // CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
 type CreateUserJSONRequestBody CreateUserJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Authenticate with Google
+	// (POST /auth/google)
+	GoogleAuth(ctx echo.Context) error
 	// Get list of users
 	// (GET /users)
 	ListUsers(ctx echo.Context, params ListUsersParams) error
@@ -46,6 +84,15 @@ type ServerInterface interface {
 // ServerInterfaceWrapper converts echo contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler ServerInterface
+}
+
+// GoogleAuth converts echo context to params.
+func (w *ServerInterfaceWrapper) GoogleAuth(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GoogleAuth(ctx)
+	return err
 }
 
 // ListUsers converts echo context to params.
@@ -161,6 +208,7 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 		Handler: si,
 	}
 
+	router.POST(options.BaseURL+"/auth/google", wrapper.GoogleAuth, options.OperationMiddlewares["googleAuth"]...)
 	router.GET(options.BaseURL+"/users", wrapper.ListUsers, options.OperationMiddlewares["listUsers"]...)
 	router.POST(options.BaseURL+"/users", wrapper.CreateUser, options.OperationMiddlewares["createUser"]...)
 	router.DELETE(options.BaseURL+"/users/:id", wrapper.DeleteUser, options.OperationMiddlewares["deleteUser"]...)

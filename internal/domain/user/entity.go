@@ -9,11 +9,13 @@ type User struct {
 	id        ID
 	email     Email
 	name      Name
+	role      Role
+	googleID  string
 	createdAt time.Time
 	updatedAt time.Time
 }
 
-// NewUser creates a new User instance (for new users).
+// NewUser creates a new User instance (for new users, no role assigned).
 func NewUser(email Email, name Name) *User {
 	now := time.Now().UTC()
 	return &User{
@@ -25,12 +27,28 @@ func NewUser(email Email, name Name) *User {
 	}
 }
 
+// NewGoogleUser creates a new User authenticated via Google OAuth.
+func NewGoogleUser(email Email, name Name, role Role, googleID string) *User {
+	now := time.Now().UTC()
+	return &User{
+		id:        NewID(),
+		email:     email,
+		name:      name,
+		role:      role,
+		googleID:  googleID,
+		createdAt: now,
+		updatedAt: now,
+	}
+}
+
 // RestoreUser restores an existing User instance from storage.
-func RestoreUser(id ID, email Email, name Name, createdAt, updatedAt time.Time) *User {
+func RestoreUser(id ID, email Email, name Name, role Role, googleID string, createdAt, updatedAt time.Time) *User {
 	return &User{
 		id:        id,
 		email:     email,
 		name:      name,
+		role:      role,
+		googleID:  googleID,
 		createdAt: createdAt,
 		updatedAt: updatedAt,
 	}
@@ -47,6 +65,14 @@ func (u *User) Email() Email {
 
 func (u *User) Name() Name {
 	return u.name
+}
+
+func (u *User) Role() Role {
+	return u.role
+}
+
+func (u *User) GoogleID() string {
+	return u.googleID
 }
 
 func (u *User) CreatedAt() time.Time {

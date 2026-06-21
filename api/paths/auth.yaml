@@ -1,0 +1,26 @@
+post:
+  summary: Authenticate with Google
+  operationId: googleAuth
+  tags:
+    - auth
+  requestBody:
+    $ref: '../requestBodies/google-auth-request.yaml'
+  responses:
+    '200':
+      description: Authenticated successfully
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/auth-response.yaml'
+    '401':
+      description: Invalid or expired Google ID token
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/error-response.yaml'
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/error-response.yaml'

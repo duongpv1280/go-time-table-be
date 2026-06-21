@@ -1,19 +1,30 @@
-.PHONY: tidy generate oapi-codegen wire build run test clean
+.PHONY: tidy generate oapi-codegen wire build run air test lint \
+        migrate-up-local migrate-down-local migrate-create \
+        install-tools clean help
 
-# Help command to list targets
+DB_PATH ?= gorm.db
+
 help:
 	@echo "Available targets:"
-	@echo "  tidy         - Run go mod tidy"
-	@echo "  generate     - Generate code using oapi-codegen and wire"
-	@echo "  oapi-codegen - Generate Echo server and models from OpenAPI spec"
-	@echo "  wire         - Generate dependency injection bindings"
-	@echo "  build        - Compile the project"
-	@echo "  run          - Run the development server"
-	@echo "  test         - Run tests"
-	@echo "  clean        - Clean generated files and databases"
+	@echo "  install-tools      - Install required Go tools (oapi-codegen, wire, air)"
+	@echo "  tidy               - Run go mod tidy"
+	@echo "  generate           - Run oapi-codegen + wire"
+	@echo "  oapi-codegen       - Regenerate api.gen.go from api/root.yaml"
+	@echo "  wire               - Regenerate wire_gen.go"
+	@echo "  build              - Compile to bin/server"
+	@echo "  run                - Generate + start server on :8080"
+	@echo "  air                - Start server with hot reload (requires air)"
+	@echo "  test               - Run all tests"
+	@echo "  lint               - Run go vet"
+	@echo "  migrate-up-local   - Apply all pending migrations"
+	@echo "  migrate-down-local - Roll back all migrations"
+	@echo "  migrate-create     - Create a new migration file pair"
+	@echo "  clean              - Remove bin/, gorm.db, and generated files"
 
 install-tools:
-	docker buildx build --progress=plain --no-cache -t $(BUSYBOX) -f $(MAKEFILE_DIR)docker/busybox/Dockerfile .
+	go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
+	go install github.com/google/wire/cmd/wire@latest
+	go install github.com/air-verse/air@latest
 
 tidy:
 	go mod tidy
@@ -32,8 +43,28 @@ build: generate
 run: generate
 	go run cmd/server/main.go
 
+air:
+	PATH=$(PATH):$(HOME)/go/bin air -c .air.toml
+
 test:
 	go test -v ./...
+
+lint:
+	go vet ./...
+
+migrate-up-local:
+	go run ./cmd/migration -cmd up
+
+migrate-down-local:
+	go run ./cmd/migration -cmd down
+
+migrate-create:
+	@read -p "Migration name: " name; \
+	count=$$(ls cmd/migration/sqls/*.sql 2>/dev/null | wc -l | tr -d ' '); \
+	num=$$(printf "%06d" $$(( count / 2 + 1 ))); \
+	touch "cmd/migration/sqls/$${num}_$${name}.up.sql"; \
+	touch "cmd/migration/sqls/$${num}_$${name}.down.sql"; \
+	echo "Created cmd/migration/sqls/$${num}_$${name}.{up,down}.sql"
 
 clean:
 	rm -rf bin/

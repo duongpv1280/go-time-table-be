@@ -4,6 +4,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"gosample/internal/domain/user"
 	usecase "gosample/internal/usecase/user"
 )
@@ -43,9 +46,17 @@ func (m *mockUserRepository) FindAll(ctx context.Context) ([]*user.User, error) 
 	return list, nil
 }
 
+func (m *mockUserRepository) FindByEmail(_ context.Context, email user.Email) (*user.User, error) {
+	for _, u := range m.users {
+		if u.Email().String() == email.String() {
+			return u, nil
+		}
+	}
+	return nil, user.ErrUserNotFound
+}
+
 func (m *mockUserRepository) Delete(ctx context.Context, id user.ID) error {
-	_, ok := m.users[id]
-	if !ok {
+	if _, ok := m.users[id]; !ok {
 		return user.ErrUserNotFound
 	}
 	delete(m.users, id)
@@ -56,22 +67,27 @@ func TestCreateUser(t *testing.T) {
 	repo := newMockUserRepository()
 	uc := usecase.NewUserUseCase(repo)
 
-	params := usecase.CreateUserParams{
+	dto, err := uc.CreateUser(context.Background(), usecase.CreateUserParams{
 		Email: "john@example.com",
 		Name:  "John",
-	}
+	})
 
-	dto, err := uc.CreateUser(context.Background(), params)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, "john@example.com", dto.Email)
+	assert.Equal(t, "John", dto.Name)
+	assert.NotEmpty(t, dto.ID)
+}
 
-	if dto.Email != "john@example.com" {
-		t.Errorf("expected email john@example.com, got %s", dto.Email)
-	}
-	if dto.Name != "John" {
-		t.Errorf("expected name John, got %s", dto.Name)
-	}
+func TestCreateUser_InvalidEmail_ReturnsBadRequest(t *testing.T) {
+	repo := newMockUserRepository()
+	uc := usecase.NewUserUseCase(repo)
+
+	_, err := uc.CreateUser(context.Background(), usecase.CreateUserParams{
+		Email: "not-an-email",
+		Name:  "John",
+	})
+
+	require.ErrorIs(t, err, user.ErrInvalidEmail)
 }
 
 func TestGetUser_NotFound(t *testing.T) {
@@ -79,7 +95,23 @@ func TestGetUser_NotFound(t *testing.T) {
 	uc := usecase.NewUserUseCase(repo)
 
 	_, err := uc.GetUser(context.Background(), "123e4567-e89b-12d3-a456-426614174000")
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
+
+	require.ErrorIs(t, err, user.ErrUserNotFound)
+}
+
+func TestDeleteUser_RemovesUser(t *testing.T) {
+	repo := newMockUserRepository()
+	uc := usecase.NewUserUseCase(repo)
+
+	dto, err := uc.CreateUser(context.Background(), usecase.CreateUserParams{
+		Email: "delete@example.com",
+		Name:  "ToDelete",
+	})
+	require.NoError(t, err)
+
+	err = uc.DeleteUser(context.Background(), dto.ID)
+	require.NoError(t, err)
+
+	_, err = uc.GetUser(context.Background(), dto.ID)
+	require.ErrorIs(t, err, user.ErrUserNotFound)
 }

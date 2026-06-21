@@ -10,48 +10,71 @@ import (
 	"github.com/google/wire"
 	"gorm.io/gorm"
 	"gosample/internal/delivery/http/handlers"
+	auth3 "gosample/internal/domain/auth"
+	"gosample/internal/infrastructure/auth"
 	"gosample/internal/infrastructure/config"
 	"gosample/internal/infrastructure/db"
+	auth2 "gosample/internal/usecase/auth"
+	"gosample/internal/usecase/class"
 	"gosample/internal/usecase/user"
 )
 
 // Injectors from wire.go:
 
-// InitializeApp resolves database connection, repository, usecase, and handler.
+// InitializeApp resolves all dependencies via Wire.
+// config.Load → *config.Config → db.NewDatabase → *gorm.DB → repositories → usecases → handlers.
 func InitializeApp() (*Application, error) {
 	configConfig, err := config.Load()
 	if err != nil {
 		return nil, err
 	}
-	string2 := provideDBPath(configConfig)
-	gormDB, err := db.NewDatabase(string2)
+	gormDB, err := db.NewDatabase(configConfig)
 	if err != nil {
 		return nil, err
 	}
 	iUserRepository := db.NewGormUserRepository(gormDB)
 	iUserUseCase := user.NewUserUseCase(iUserRepository)
 	userHandler := handlers.NewUserHandler(iUserUseCase)
-	application := NewApplication(gormDB, userHandler)
+	iGoogleVerifier := auth.NewGoogleVerifier()
+	iRoleRepository := db.NewGormCasbinRepository(gormDB)
+	iPermissionService := auth.NewPermissionService()
+	ijwtService := auth.NewJWTService(configConfig)
+	iGoogleAuthUseCase := auth2.NewGoogleAuthUseCase(iGoogleVerifier, iUserRepository, iRoleRepository, iPermissionService, ijwtService)
+	authHandler := handlers.NewAuthHandler(iGoogleAuthUseCase)
+	combinedHandler := handlers.NewCombinedHandler(userHandler, authHandler)
+	iClassRepository := db.NewGormClassRepository(gormDB)
+	iClassUseCase := class.NewClassUseCase(iClassRepository)
+	classHandler := handlers.NewClassHandler(iClassUseCase)
+	application := NewApplication(gormDB, combinedHandler, classHandler, ijwtService)
 	return application, nil
 }
 
 // wire.go:
 
 type Application struct {
-	DB          *gorm.DB
-	UserHandler *handlers.UserHandler
+	DB           *gorm.DB
+	Handler      *handlers.CombinedHandler
+	ClassHandler *handlers.ClassHandler
+	JWTService   auth3.IJWTService
 }
 
-func NewApplication(db2 *gorm.DB, handler *handlers.UserHandler) *Application {
+func NewApplication(db2 *gorm.DB, handler *handlers.CombinedHandler, classHandler *handlers.ClassHandler, jwtService auth3.IJWTService) *Application {
 	return &Application{
-		DB:          db2,
-		UserHandler: handler,
+		DB:           db2,
+		Handler:      handler,
+		ClassHandler: classHandler,
+		JWTService:   jwtService,
 	}
 }
 
 // UserSet bundles all providers for the User component.
 var UserSet = wire.NewSet(db.NewGormUserRepository, user.NewUserUseCase, handlers.NewUserHandler)
 
-func provideDBPath(cfg *config.Config) string {
-	return cfg.DBPath
-}
+// AuthSet bundles all providers for the Google Auth component.
+var AuthSet = wire.NewSet(auth.NewGoogleVerifier, auth.NewPermissionService, db.NewGormCasbinRepository, auth2.NewGoogleAuthUseCase, handlers.NewAuthHandler)
+
+// JWTSet bundles the JWT service provider.
+var JWTSet = wire.NewSet(auth.NewJWTService)
+
+// ClassSet bundles all providers for the Class component.
+var ClassSet = wire.NewSet(db.NewGormClassRepository, class.NewClassUseCase, handlers.NewClassHandler)

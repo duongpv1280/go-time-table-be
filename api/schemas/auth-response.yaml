@@ -1,0 +1,25 @@
+type: object
+required:
+  - name
+  - email
+  - role
+  - permissions
+properties:
+  name:
+    type: string
+    example: Mr. A
+  email:
+    type: string
+    format: email
+    example: teacher.a@school.com
+  role:
+    type: string
+    enum: [ADMIN, TEACHER, STUDENT]
+    example: TEACHER
+  token:
+    type: string
+    description: JWT token for subsequent API calls
+  permissions:
+    type: object
+    description: Resource permissions derived from the user's role
+    additionalProperties: {}

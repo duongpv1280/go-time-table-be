@@ -1,0 +1,31 @@
+# Admin — full control over users, subjects, classes, teachers
+p, ADMIN, /api/v1/users, GET
+p, ADMIN, /api/v1/users, POST
+p, ADMIN, /api/v1/users/:user_id, GET
+p, ADMIN, /api/v1/users/:user_id, PUT
+p, ADMIN, /api/v1/users/:user_id, DELETE
+p, ADMIN, /api/v1/subjects, GET
+p, ADMIN, /api/v1/subjects, POST
+p, ADMIN, /api/v1/subjects/:subject_id, PUT
+p, ADMIN, /api/v1/subjects/:subject_id, DELETE
+p, ADMIN, /api/v1/classes, GET
+p, ADMIN, /api/v1/classes, POST
+p, ADMIN, /api/v1/classes/:class_id, PUT
+p, ADMIN, /api/v1/classes/:class_id, DELETE
+p, ADMIN, /api/v1/teachers, POST
+p, ADMIN, /api/v1/slots, POST
+
+# Teacher — read their students/peers, manage their own slots
+p, TEACHER, /api/v1/classes, GET
+p, TEACHER, /api/v1/classes/:class_id, GET
+p, TEACHER, /api/v1/classes/:class_id/students, GET
+p, TEACHER, /api/v1/teachers, GET
+p, TEACHER, /api/v1/teachers/:teacher_id/subjects, GET
+p, TEACHER, /api/v1/slots/:slot_id, PUT
+p, TEACHER, /api/v1/slots/:slot_id, DELETE
+
+# Student — read-only view of their own class
+p, STUDENT, /api/v1/classes, GET
+p, STUDENT, /api/v1/classes/:class_id, GET
+p, STUDENT, /api/v1/classes/:class_id/subjects, GET
+p, STUDENT, /api/v1/classes/:class_id/teachers, GET
