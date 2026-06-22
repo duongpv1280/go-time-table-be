@@ -1,0 +1,30 @@
+get:
+  operationId: getClassById
+  summary: Get class by ID (role-scoped)
+  security:
+    - BearerAuth: []
+  parameters:
+    - name: classId
+      in: path
+      required: true
+      schema:
+        type: string
+  responses:
+    '200':
+      description: Class details
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/class.yaml'
+    '401':
+      description: Unauthorized or class not found
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/error-response.yaml'
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/error-response.yaml'

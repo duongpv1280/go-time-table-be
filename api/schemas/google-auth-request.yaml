@@ -1,0 +1,7 @@
+type: object
+required:
+  - idToken
+properties:
+  idToken:
+    type: string
+    example: eyJhbGciOiJSUzI1NiIsImtpZCI6...

@@ -1,0 +1,24 @@
+get:
+  operationId: getClasses
+  summary: Get list of classes (role-scoped)
+  security:
+    - BearerAuth: []
+  responses:
+    '200':
+      description: List of classes
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/list-classes-response.yaml'
+    '401':
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/error-response.yaml'
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/error-response.yaml'

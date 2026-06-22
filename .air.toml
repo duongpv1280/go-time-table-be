@@ -1,0 +1,25 @@
+root = "."
+tmp_dir = ".air/tmp"
+
+[build]
+  bin = ".air/tmp/server"
+  cmd = "go build -o .air/tmp/server ./cmd/server/main.go"
+  delay = 1000
+  exclude_dir = ["bin", ".air", "vendor", "docs"]
+  exclude_regex = ["_test\\.go$", "\\.gen\\.go$", "wire_gen\\.go$"]
+  include_ext = ["go", "yaml"]
+  kill_delay = "0s"
+  log = ".air/build-errors.log"
+  stop_on_error = true
+
+[color]
+  build = "yellow"
+  main  = "magenta"
+  runner = "green"
+  watcher = "cyan"
+
+[log]
+  time = false
+
+[misc]
+  clean_on_exit = false

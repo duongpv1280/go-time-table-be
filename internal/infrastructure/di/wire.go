@@ -4,9 +4,13 @@
 package di
 
 import (
+	domainAuth "gosample/internal/domain/auth"
 	"gosample/internal/delivery/http/handlers"
 	"gosample/internal/infrastructure/config"
 	"gosample/internal/infrastructure/db"
+	infraAuth "gosample/internal/infrastructure/auth"
+	usecaseAuth "gosample/internal/usecase/auth"
+	classUseCase "gosample/internal/usecase/class"
 	usecase "gosample/internal/usecase/user"
 
 	"github.com/google/wire"
@@ -14,14 +18,18 @@ import (
 )
 
 type Application struct {
-	DB          *gorm.DB
-	UserHandler *handlers.UserHandler
+	DB           *gorm.DB
+	Handler      *handlers.CombinedHandler
+	ClassHandler *handlers.ClassHandler
+	JWTService   domainAuth.IJWTService
 }
 
-func NewApplication(db *gorm.DB, handler *handlers.UserHandler) *Application {
+func NewApplication(db *gorm.DB, handler *handlers.CombinedHandler, classHandler *handlers.ClassHandler, jwtService domainAuth.IJWTService) *Application {
 	return &Application{
-		DB:          db,
-		UserHandler: handler,
+		DB:           db,
+		Handler:      handler,
+		ClassHandler: classHandler,
+		JWTService:   jwtService,
 	}
 }
 
@@ -32,17 +40,38 @@ var UserSet = wire.NewSet(
 	handlers.NewUserHandler,
 )
 
-func provideDBPath(cfg *config.Config) string {
-	return cfg.DBPath
-}
+// AuthSet bundles all providers for the Google Auth component.
+var AuthSet = wire.NewSet(
+	infraAuth.NewGoogleVerifier,
+	infraAuth.NewPermissionService,
+	db.NewGormCasbinRepository,
+	usecaseAuth.NewGoogleAuthUseCase,
+	handlers.NewAuthHandler,
+)
 
-// InitializeApp resolves database connection, repository, usecase, and handler.
+// JWTSet bundles the JWT service provider.
+var JWTSet = wire.NewSet(
+	infraAuth.NewJWTService,
+)
+
+// ClassSet bundles all providers for the Class component.
+var ClassSet = wire.NewSet(
+	db.NewGormClassRepository,
+	classUseCase.NewClassUseCase,
+	handlers.NewClassHandler,
+)
+
+// InitializeApp resolves all dependencies via Wire.
+// config.Load → *config.Config → db.NewDatabase → *gorm.DB → repositories → usecases → handlers.
 func InitializeApp() (*Application, error) {
 	wire.Build(
 		config.Load,
-		provideDBPath,
 		db.NewDatabase,
 		UserSet,
+		AuthSet,
+		JWTSet,
+		ClassSet,
+		handlers.NewCombinedHandler,
 		NewApplication,
 	)
 	return nil, nil

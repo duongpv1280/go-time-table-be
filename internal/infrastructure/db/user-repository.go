@@ -45,6 +45,19 @@ func (r *gormUserRepository) FindByID(ctx context.Context, id user.ID) (*user.Us
 	return model.ToDomain()
 }
 
+func (r *gormUserRepository) FindByEmail(ctx context.Context, email user.Email) (*user.User, error) {
+	var model UserModel
+	err := r.db.WithContext(ctx).Where("email = ?", email.String()).First(&model).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, user.ErrUserNotFound
+		}
+		return nil, err
+	}
+
+	return model.ToDomain()
+}
+
 func (r *gormUserRepository) FindAll(ctx context.Context) ([]*user.User, error) {
 	var models []UserModel
 	err := r.db.WithContext(ctx).Find(&models).Error

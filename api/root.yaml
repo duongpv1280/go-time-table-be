@@ -8,6 +8,8 @@ paths:
     $ref: './paths/users.yaml'
   /users/{id}:
     $ref: './paths/users-by-id.yaml'
+  /auth/google:
+    $ref: './paths/auth.yaml'
 components:
   schemas:
     User:
@@ -20,3 +22,12 @@ components:
       $ref: './schemas/list-users-response.yaml'
     CreateUserRequest:
       $ref: './schemas/create-user-request.yaml'
+    GoogleAuthRequest:
+      $ref: './schemas/google-auth-request.yaml'
+    AuthResponse:
+      $ref: './schemas/auth-response.yaml'
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

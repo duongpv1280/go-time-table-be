@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"gosample/internal/delivery/http"
+	httpMiddleware "gosample/internal/delivery/http/middleware"
 	"gosample/internal/infrastructure/config"
 	"gosample/internal/infrastructure/di"
 
@@ -27,7 +28,14 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	http.RegisterHandlers(e, app.UserHandler)
+	http.RegisterHandlers(e, app.Handler)
+
+	apiV1 := e.Group("/api/v1")
+	apiV1.Use(httpMiddleware.JWTAuth(app.JWTService))
+	apiV1.GET("/classes", app.ClassHandler.GetClasses)
+	apiV1.GET("/classes/:classId", func(c echo.Context) error {
+		return app.ClassHandler.GetClassById(c, c.Param("classId"))
+	})
 
 	addr := fmt.Sprintf(":%s", cfg.ServerPort)
 	log.Printf("Starting server on %s...", addr)
