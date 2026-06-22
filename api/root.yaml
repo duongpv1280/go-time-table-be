@@ -26,6 +26,10 @@ components:
       $ref: './schemas/google-auth-request.yaml'
     AuthResponse:
       $ref: './schemas/auth-response.yaml'
+    CreateClassRequest:
+      $ref: './schemas/create-class-request.yaml'
+    UpdateClassRequest:
+      $ref: './schemas/update-class-request.yaml'
   securitySchemes:
     BearerAuth:
       type: http

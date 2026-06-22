@@ -22,3 +22,35 @@ get:
         application/json:
           schema:
             $ref: '../schemas/error-response.yaml'
+post:
+  operationId: createClass
+  summary: Create a new class (ADMIN only)
+  security:
+    - BearerAuth: []
+  requestBody:
+    $ref: '../requestBodies/create-class.yaml'
+  responses:
+    '201':
+      description: Class created
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/class.yaml'
+    '401':
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/error-response.yaml'
+    '403':
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/error-response.yaml'
+    '422':
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/error-response.yaml'

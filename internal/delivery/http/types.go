@@ -49,3 +49,19 @@ type Class struct {
 type ListClassesResponse struct {
 	Data []Class `json:"data"`
 }
+
+type CreateClassRequest struct {
+	Name  string `json:"name" validate:"required,notblank,unique_in=classes:name"`
+	Grade int    `json:"grade" validate:"required,min=1"`
+}
+
+type UpdateClassRequest struct {
+	Name  string `json:"name" validate:"omitempty,unique_in=classes:name"`
+	Grade *int   `json:"grade" validate:"omitempty,min=1"`
+}
+
+type ValidationErrorResponse struct {
+	Error   string            `json:"error"`
+	Message string            `json:"message"`
+	Fields  map[string]string `json:"fields,omitempty"`
+}

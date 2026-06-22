@@ -94,3 +94,31 @@ func TestRestoreClass_ReturnsExactValues(t *testing.T) {
 	assert.Equal(t, now, c.CreatedAt())
 	assert.Equal(t, now, c.UpdatedAt())
 }
+
+func TestClass_UpdateName_ChangesNameAndBumpsUpdatedAt(t *testing.T) {
+	name, _ := class.NewName("10A")
+	grade, _ := class.NewGrade(10)
+	c := class.NewClass(name, grade)
+	before := c.UpdatedAt()
+
+	time.Sleep(time.Millisecond)
+	newName, _ := class.NewName("11B")
+	c.UpdateName(newName)
+
+	assert.Equal(t, "11B", c.Name().String())
+	assert.True(t, c.UpdatedAt().After(before) || c.UpdatedAt().Equal(before), "updatedAt must not go backwards")
+}
+
+func TestClass_UpdateGrade_ChangesGradeAndBumpsUpdatedAt(t *testing.T) {
+	name, _ := class.NewName("10A")
+	grade, _ := class.NewGrade(10)
+	c := class.NewClass(name, grade)
+	before := c.UpdatedAt()
+
+	time.Sleep(time.Millisecond)
+	newGrade, _ := class.NewGrade(12)
+	c.UpdateGrade(newGrade)
+
+	assert.Equal(t, 12, c.Grade().Value())
+	assert.True(t, c.UpdatedAt().After(before) || c.UpdatedAt().Equal(before), "updatedAt must not go backwards")
+}

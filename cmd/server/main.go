@@ -36,6 +36,10 @@ func main() {
 	apiV1.GET("/classes/:classId", func(c echo.Context) error {
 		return app.ClassHandler.GetClassById(c, c.Param("classId"))
 	})
+	apiV1.POST("/classes", app.ClassHandler.CreateClass)
+	apiV1.PUT("/classes/:classId", func(c echo.Context) error {
+		return app.ClassHandler.UpdateClass(c, c.Param("classId"))
+	})
 
 	addr := fmt.Sprintf(":%s", cfg.ServerPort)
 	log.Printf("Starting server on %s...", addr)

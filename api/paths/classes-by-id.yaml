@@ -28,3 +28,41 @@ get:
         application/json:
           schema:
             $ref: '../schemas/error-response.yaml'
+put:
+  operationId: updateClass
+  summary: Update a class (ADMIN only)
+  security:
+    - BearerAuth: []
+  parameters:
+    - name: classId
+      in: path
+      required: true
+      schema:
+        type: string
+  requestBody:
+    $ref: '../requestBodies/update-class.yaml'
+  responses:
+    '200':
+      description: Class updated
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/class.yaml'
+    '401':
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/error-response.yaml'
+    '403':
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/error-response.yaml'
+    '422':
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/error-response.yaml'

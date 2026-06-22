@@ -93,6 +93,12 @@ func (r *gormClassRepository) FindByStudentUserID(ctx context.Context, userID st
 	return model.ToClassDomain()
 }
 
+func (r *gormClassRepository) Update(ctx context.Context, c *classDomain.Class) error {
+	return r.db.WithContext(ctx).Model(&ClassModel{}).
+		Where("id = ?", c.ID().String()).
+		Updates(ClassFromDomain(c)).Error
+}
+
 func toClassDomains(models []ClassModel) ([]*classDomain.Class, error) {
 	classes := make([]*classDomain.Class, len(models))
 	for i, m := range models {
