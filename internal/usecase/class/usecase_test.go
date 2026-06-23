@@ -18,16 +18,18 @@ import (
 // --- Mock ---
 
 type mockClassRepository struct {
-	classes          []*classDomain.Class
-	findByIDErr      error
-	teacherClasses   []*classDomain.Class
-	teacherErr       error
-	studentClass     *classDomain.Class
-	studentErr       error
+	classes        []*classDomain.Class
+	findByIDErr    error
+	teacherClasses []*classDomain.Class
+	teacherErr     error
+	studentClass   *classDomain.Class
+	studentErr     error
+	createErr      error
+	updateErr      error
 }
 
 func (m *mockClassRepository) Create(_ context.Context, _ *classDomain.Class) error {
-	return nil
+	return m.createErr
 }
 
 func (m *mockClassRepository) FindByID(_ context.Context, id classDomain.ID) (*classDomain.Class, error) {
@@ -52,6 +54,10 @@ func (m *mockClassRepository) FindByTeacherUserID(_ context.Context, _ string) (
 
 func (m *mockClassRepository) FindByStudentUserID(_ context.Context, _ string) (*classDomain.Class, error) {
 	return m.studentClass, m.studentErr
+}
+
+func (m *mockClassRepository) Update(_ context.Context, _ *classDomain.Class) error {
+	return m.updateErr
 }
 
 // --- Helpers ---
@@ -267,6 +273,143 @@ func TestGetClassByID_Teacher_FindByTeacherUserIDError_ReturnsError(t *testing.T
 
 	require.Error(t, err)
 	assert.ErrorIs(t, err, dbErr)
+}
+
+// --- CreateClass tests ---
+
+func TestCreateClass_Admin_Success(t *testing.T) {
+	repo := &mockClassRepository{}
+	uc := classUseCase.NewClassUseCase(repo)
+
+	perm := domainAuth.ContextPermission{UserID: "admin-1", Role: userDomain.RoleAdmin}
+	result, err := uc.CreateClass(context.Background(), "10A", 10, perm)
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Equal(t, "10A", result.Name)
+	assert.Equal(t, 10, result.Grade)
+}
+
+func TestCreateClass_Teacher_ReturnsUnauthorized(t *testing.T) {
+	repo := &mockClassRepository{}
+	uc := classUseCase.NewClassUseCase(repo)
+
+	perm := domainAuth.ContextPermission{UserID: "teacher-1", Role: userDomain.RoleTeacher}
+	_, err := uc.CreateClass(context.Background(), "10A", 10, perm)
+
+	require.Error(t, err)
+	assert.ErrorIs(t, err, domainAuth.ErrUnauthorized)
+}
+
+func TestCreateClass_Student_ReturnsUnauthorized(t *testing.T) {
+	repo := &mockClassRepository{}
+	uc := classUseCase.NewClassUseCase(repo)
+
+	perm := domainAuth.ContextPermission{UserID: "student-1", Role: userDomain.RoleStudent}
+	_, err := uc.CreateClass(context.Background(), "10A", 10, perm)
+
+	require.Error(t, err)
+	assert.ErrorIs(t, err, domainAuth.ErrUnauthorized)
+}
+
+func TestCreateClass_EmptyName_ReturnsDomainError(t *testing.T) {
+	repo := &mockClassRepository{}
+	uc := classUseCase.NewClassUseCase(repo)
+
+	perm := domainAuth.ContextPermission{UserID: "admin-1", Role: userDomain.RoleAdmin}
+	_, err := uc.CreateClass(context.Background(), "", 10, perm)
+
+	require.Error(t, err)
+	assert.ErrorIs(t, err, classDomain.ErrEmptyClassName)
+}
+
+func TestCreateClass_InvalidGrade_ReturnsDomainError(t *testing.T) {
+	repo := &mockClassRepository{}
+	uc := classUseCase.NewClassUseCase(repo)
+
+	perm := domainAuth.ContextPermission{UserID: "admin-1", Role: userDomain.RoleAdmin}
+	_, err := uc.CreateClass(context.Background(), "10A", 0, perm)
+
+	require.Error(t, err)
+	assert.ErrorIs(t, err, classDomain.ErrInvalidGrade)
+}
+
+// --- UpdateClass tests ---
+
+func TestUpdateClass_Admin_Success(t *testing.T) {
+	existing := restoreClass("11111111-1111-1111-1111-111111111111", "10A", 10)
+	repo := &mockClassRepository{classes: []*classDomain.Class{existing}}
+	uc := classUseCase.NewClassUseCase(repo)
+
+	perm := domainAuth.ContextPermission{UserID: "admin-1", Role: userDomain.RoleAdmin}
+	newGrade := 11
+	result, err := uc.UpdateClass(context.Background(), "11111111-1111-1111-1111-111111111111", "11B", &newGrade, perm)
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Equal(t, "11B", result.Name)
+	assert.Equal(t, 11, result.Grade)
+}
+
+func TestUpdateClass_Teacher_ReturnsUnauthorized(t *testing.T) {
+	repo := &mockClassRepository{}
+	uc := classUseCase.NewClassUseCase(repo)
+
+	perm := domainAuth.ContextPermission{UserID: "teacher-1", Role: userDomain.RoleTeacher}
+	_, err := uc.UpdateClass(context.Background(), "11111111-1111-1111-1111-111111111111", "11B", nil, perm)
+
+	require.Error(t, err)
+	assert.ErrorIs(t, err, domainAuth.ErrUnauthorized)
+}
+
+func TestUpdateClass_ClassNotFound_ReturnsUnauthorized(t *testing.T) {
+	repo := &mockClassRepository{classes: []*classDomain.Class{}}
+	uc := classUseCase.NewClassUseCase(repo)
+
+	perm := domainAuth.ContextPermission{UserID: "admin-1", Role: userDomain.RoleAdmin}
+	id := classDomain.NewID()
+	_, err := uc.UpdateClass(context.Background(), id.String(), "11B", nil, perm)
+
+	require.Error(t, err)
+	assert.ErrorIs(t, err, domainAuth.ErrUnauthorized)
+}
+
+func TestUpdateClass_InvalidClassID_ReturnsUnauthorized(t *testing.T) {
+	repo := &mockClassRepository{}
+	uc := classUseCase.NewClassUseCase(repo)
+
+	perm := domainAuth.ContextPermission{UserID: "admin-1", Role: userDomain.RoleAdmin}
+	_, err := uc.UpdateClass(context.Background(), "not-a-uuid", "11B", nil, perm)
+
+	require.Error(t, err)
+	assert.ErrorIs(t, err, domainAuth.ErrUnauthorized)
+}
+
+func TestUpdateClass_OnlyName_UpdatesName(t *testing.T) {
+	existing := restoreClass("11111111-1111-1111-1111-111111111111", "10A", 10)
+	repo := &mockClassRepository{classes: []*classDomain.Class{existing}}
+	uc := classUseCase.NewClassUseCase(repo)
+
+	perm := domainAuth.ContextPermission{UserID: "admin-1", Role: userDomain.RoleAdmin}
+	result, err := uc.UpdateClass(context.Background(), "11111111-1111-1111-1111-111111111111", "NewName", nil, perm)
+
+	require.NoError(t, err)
+	assert.Equal(t, "NewName", result.Name)
+	assert.Equal(t, 10, result.Grade)
+}
+
+func TestUpdateClass_OnlyGrade_UpdatesGrade(t *testing.T) {
+	existing := restoreClass("11111111-1111-1111-1111-111111111111", "10A", 10)
+	repo := &mockClassRepository{classes: []*classDomain.Class{existing}}
+	uc := classUseCase.NewClassUseCase(repo)
+
+	perm := domainAuth.ContextPermission{UserID: "admin-1", Role: userDomain.RoleAdmin}
+	newGrade := 12
+	result, err := uc.UpdateClass(context.Background(), "11111111-1111-1111-1111-111111111111", "", &newGrade, perm)
+
+	require.NoError(t, err)
+	assert.Equal(t, "10A", result.Name)
+	assert.Equal(t, 12, result.Grade)
 }
 
 // suppress unused import

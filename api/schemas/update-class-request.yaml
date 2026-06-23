@@ -1,0 +1,10 @@
+type: object
+properties:
+  name:
+    type: string
+    x-oapi-codegen-extra-tags:
+      validate: "omitempty,unique_in=classes:name"
+  grade:
+    type: integer
+    x-oapi-codegen-extra-tags:
+      validate: "omitempty,min=1"

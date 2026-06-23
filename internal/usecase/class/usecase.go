@@ -12,6 +12,8 @@ import (
 type IClassUseCase interface {
 	GetClasses(ctx context.Context, permission domainAuth.ContextPermission) ([]ClassDTO, error)
 	GetClassByID(ctx context.Context, classID string, permission domainAuth.ContextPermission) (*ClassDTO, error)
+	CreateClass(ctx context.Context, name string, grade int, permission domainAuth.ContextPermission) (*ClassDTO, error)
+	UpdateClass(ctx context.Context, classID, name string, grade *int, permission domainAuth.ContextPermission) (*ClassDTO, error)
 }
 
 type classUseCase struct {
@@ -98,6 +100,62 @@ func (uc *classUseCase) GetClassByID(ctx context.Context, classID string, permis
 	default:
 		return nil, domainAuth.ErrUnauthorized
 	}
+}
+
+func (uc *classUseCase) CreateClass(ctx context.Context, name string, grade int, permission domainAuth.ContextPermission) (*ClassDTO, error) {
+	if permission.Role != userDomain.RoleAdmin {
+		return nil, domainAuth.ErrUnauthorized
+	}
+	n, err := classDomain.NewName(name)
+	if err != nil {
+		return nil, err
+	}
+	g, err := classDomain.NewGrade(grade)
+	if err != nil {
+		return nil, err
+	}
+	c := classDomain.NewClass(n, g)
+	if err := uc.repo.Create(ctx, c); err != nil {
+		return nil, err
+	}
+	dto := toClassDTO(c)
+	return &dto, nil
+}
+
+func (uc *classUseCase) UpdateClass(ctx context.Context, classID, name string, grade *int, permission domainAuth.ContextPermission) (*ClassDTO, error) {
+	if permission.Role != userDomain.RoleAdmin {
+		return nil, domainAuth.ErrUnauthorized
+	}
+	id, err := classDomain.ParseID(classID)
+	if err != nil {
+		return nil, domainAuth.ErrUnauthorized
+	}
+	c, err := uc.repo.FindByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, classDomain.ErrClassNotFound) {
+			return nil, domainAuth.ErrUnauthorized
+		}
+		return nil, err
+	}
+	if name != "" {
+		n, err := classDomain.NewName(name)
+		if err != nil {
+			return nil, err
+		}
+		c.UpdateName(n)
+	}
+	if grade != nil {
+		g, err := classDomain.NewGrade(*grade)
+		if err != nil {
+			return nil, err
+		}
+		c.UpdateGrade(g)
+	}
+	if err := uc.repo.Update(ctx, c); err != nil {
+		return nil, err
+	}
+	dto := toClassDTO(c)
+	return &dto, nil
 }
 
 func toClassDTO(c *classDomain.Class) ClassDTO {

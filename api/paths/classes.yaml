@@ -22,3 +22,33 @@ get:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
+post:
+  operationId: createClass
+  summary: Create a new class (ADMIN only)
+  security:
+    - BearerAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/CreateClassRequest'
+  responses:
+    '201':
+      description: Class created
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Class'
+    '401':
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    '422':
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationErrorResponse'

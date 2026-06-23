@@ -6,6 +6,7 @@ package di
 import (
 	domainAuth "gosample/internal/domain/auth"
 	"gosample/internal/delivery/http/handlers"
+	"gosample/internal/delivery/http/validator/rules"
 	"gosample/internal/infrastructure/config"
 	"gosample/internal/infrastructure/db"
 	infraAuth "gosample/internal/infrastructure/auth"
@@ -52,10 +53,16 @@ var JWTSet = wire.NewSet(
 	infraAuth.NewJWTService,
 )
 
+// ValidatorSet bundles the validator provider.
+var ValidatorSet = wire.NewSet(
+	rules.NewValidator,
+)
+
 // ClassSet bundles all providers for the Class component.
 var ClassSet = wire.NewSet(
 	db.NewGormClassRepository,
 	classUseCase.NewClassUseCase,
+	ValidatorSet,
 	handlers.NewClassHandler,
 )
 

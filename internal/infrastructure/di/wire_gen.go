@@ -10,6 +10,7 @@ import (
 	"github.com/google/wire"
 	"gorm.io/gorm"
 	"gosample/internal/delivery/http/handlers"
+	"gosample/internal/delivery/http/validator/rules"
 	auth3 "gosample/internal/domain/auth"
 	"gosample/internal/infrastructure/auth"
 	"gosample/internal/infrastructure/config"
@@ -43,7 +44,8 @@ func InitializeApp() (*Application, error) {
 	authHandler := handlers.NewAuthHandler(iGoogleAuthUseCase)
 	iClassRepository := db.NewGormClassRepository(gormDB)
 	iClassUseCase := class.NewClassUseCase(iClassRepository)
-	classHandler := handlers.NewClassHandler(iClassUseCase)
+	iValidator := rules.NewValidator(gormDB)
+	classHandler := handlers.NewClassHandler(iClassUseCase, iValidator)
 	combinedHandler := handlers.NewCombinedHandler(userHandler, authHandler, classHandler)
 	application := NewApplication(gormDB, combinedHandler, ijwtService)
 	return application, nil
@@ -74,5 +76,8 @@ var AuthSet = wire.NewSet(auth.NewGoogleVerifier, auth.NewPermissionService, db.
 // JWTSet bundles the JWT service provider.
 var JWTSet = wire.NewSet(auth.NewJWTService)
 
+// ValidatorSet bundles the validator provider.
+var ValidatorSet = wire.NewSet(rules.NewValidator)
+
 // ClassSet bundles all providers for the Class component.
-var ClassSet = wire.NewSet(db.NewGormClassRepository, class.NewClassUseCase, handlers.NewClassHandler)
+var ClassSet = wire.NewSet(db.NewGormClassRepository, class.NewClassUseCase, ValidatorSet, handlers.NewClassHandler)

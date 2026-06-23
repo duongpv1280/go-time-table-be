@@ -141,6 +141,43 @@ components:
           description: Resource permissions derived from the user's role
           additionalProperties: {}
 
+    CreateClassRequest:
+      type: object
+      required: [name, grade]
+      properties:
+        name:
+          type: string
+          x-oapi-codegen-extra-tags:
+            validate: "required,notblank,unique_in=classes:name"
+        grade:
+          type: integer
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=1"
+
+    UpdateClassRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,unique_in=classes:name"
+        grade:
+          type: integer
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,min=1"
+
+    ValidationErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        fields:
+          type: object
+          additionalProperties:
+            type: string
+
   securitySchemes:
     BearerAuth:
       type: http

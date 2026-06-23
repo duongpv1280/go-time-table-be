@@ -33,6 +33,8 @@ func main() {
 		OperationMiddlewares: map[string][]echo.MiddlewareFunc{
 			"getClasses":   {jwtMiddleware},
 			"getClassById": {jwtMiddleware},
+			"createClass":  {jwtMiddleware},
+			"updateClass":  {jwtMiddleware},
 		},
 	})
 

@@ -1,0 +1,13 @@
+type: object
+required:
+  - name
+  - grade
+properties:
+  name:
+    type: string
+    x-oapi-codegen-extra-tags:
+      validate: "required,unique_in=classes:name"
+  grade:
+    type: integer
+    x-oapi-codegen-extra-tags:
+      validate: "required,min=1"

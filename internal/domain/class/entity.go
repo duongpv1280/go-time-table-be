@@ -50,3 +50,13 @@ func (c *Class) CreatedAt() time.Time {
 func (c *Class) UpdatedAt() time.Time {
 	return c.updatedAt
 }
+
+func (c *Class) UpdateName(name Name) {
+	c.name = name
+	c.updatedAt = time.Now().UTC()
+}
+
+func (c *Class) UpdateGrade(grade Grade) {
+	c.grade = grade
+	c.updatedAt = time.Now().UTC()
+}

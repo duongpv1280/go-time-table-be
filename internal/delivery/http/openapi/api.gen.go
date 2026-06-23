@@ -63,6 +63,12 @@ type Class struct {
 	UpdatedAt time.Time          `json:"updatedAt"`
 }
 
+// CreateClassRequest defines model for CreateClassRequest.
+type CreateClassRequest struct {
+	Grade int    `json:"grade" validate:"required,min=1"`
+	Name  string `json:"name" validate:"required,notblank,unique_in=classes:name"`
+}
+
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
 	Error   *string `json:"error,omitempty"`
@@ -87,6 +93,12 @@ type Pagination struct {
 	Total   int `json:"total"`
 }
 
+// UpdateClassRequest defines model for UpdateClassRequest.
+type UpdateClassRequest struct {
+	Grade *int    `json:"grade,omitempty" validate:"omitempty,min=1"`
+	Name  *string `json:"name,omitempty" validate:"omitempty,unique_in=classes:name"`
+}
+
 // User defines model for User.
 type User struct {
 	CreatedAt time.Time           `json:"createdAt"`
@@ -94,6 +106,13 @@ type User struct {
 	Id        openapi_types.UUID  `json:"id"`
 	Name      string              `json:"name"`
 	UpdatedAt time.Time           `json:"updatedAt"`
+}
+
+// ValidationErrorResponse defines model for ValidationErrorResponse.
+type ValidationErrorResponse struct {
+	Error   *string            `json:"error,omitempty"`
+	Fields  *map[string]string `json:"fields,omitempty"`
+	Message *string            `json:"message,omitempty"`
 }
 
 // bearerAuthContextKey is the context key for BearerAuth security scheme
@@ -119,6 +138,12 @@ type CreateUserJSONBody struct {
 // GoogleAuthJSONRequestBody defines body for GoogleAuth for application/json ContentType.
 type GoogleAuthJSONRequestBody GoogleAuthJSONBody
 
+// CreateClassJSONRequestBody defines body for CreateClass for application/json ContentType.
+type CreateClassJSONRequestBody = CreateClassRequest
+
+// UpdateClassJSONRequestBody defines body for UpdateClass for application/json ContentType.
+type UpdateClassJSONRequestBody = UpdateClassRequest
+
 // CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
 type CreateUserJSONRequestBody CreateUserJSONBody
 
@@ -130,9 +155,15 @@ type ServerInterface interface {
 	// Get list of classes (role-scoped)
 	// (GET /classes)
 	GetClasses(ctx echo.Context) error
+	// Create a new class (ADMIN only)
+	// (POST /classes)
+	CreateClass(ctx echo.Context) error
 	// Get class by ID (role-scoped)
 	// (GET /classes/{classId})
 	GetClassById(ctx echo.Context, classId string) error
+	// Update a class (ADMIN only)
+	// (PUT /classes/{classId})
+	UpdateClass(ctx echo.Context, classId string) error
 	// Get list of users
 	// (GET /users)
 	ListUsers(ctx echo.Context, params ListUsersParams) error
@@ -172,6 +203,17 @@ func (w *ServerInterfaceWrapper) GetClasses(ctx echo.Context) error {
 	return err
 }
 
+// CreateClass converts echo context to params.
+func (w *ServerInterfaceWrapper) CreateClass(ctx echo.Context) error {
+	var err error
+
+	ctx.Set(string(BearerAuthScopes), []string{})
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.CreateClass(ctx)
+	return err
+}
+
 // GetClassById converts echo context to params.
 func (w *ServerInterfaceWrapper) GetClassById(ctx echo.Context) error {
 	var err error
@@ -187,6 +229,24 @@ func (w *ServerInterfaceWrapper) GetClassById(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.GetClassById(ctx, classId)
+	return err
+}
+
+// UpdateClass converts echo context to params.
+func (w *ServerInterfaceWrapper) UpdateClass(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "classId" -------------
+	var classId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "classId", ctx.Param("classId"), &classId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter classId: %s", err))
+	}
+
+	ctx.Set(string(BearerAuthScopes), []string{})
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.UpdateClass(ctx, classId)
 	return err
 }
 
@@ -305,7 +365,9 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 
 	router.POST(options.BaseURL+"/auth/google", wrapper.GoogleAuth, options.OperationMiddlewares["googleAuth"]...)
 	router.GET(options.BaseURL+"/classes", wrapper.GetClasses, options.OperationMiddlewares["getClasses"]...)
+	router.POST(options.BaseURL+"/classes", wrapper.CreateClass, options.OperationMiddlewares["createClass"]...)
 	router.GET(options.BaseURL+"/classes/:classId", wrapper.GetClassById, options.OperationMiddlewares["getClassById"]...)
+	router.PUT(options.BaseURL+"/classes/:classId", wrapper.UpdateClass, options.OperationMiddlewares["updateClass"]...)
 	router.GET(options.BaseURL+"/users", wrapper.ListUsers, options.OperationMiddlewares["listUsers"]...)
 	router.POST(options.BaseURL+"/users", wrapper.CreateUser, options.OperationMiddlewares["createUser"]...)
 	router.DELETE(options.BaseURL+"/users/:id", wrapper.DeleteUser, options.OperationMiddlewares["deleteUser"]...)

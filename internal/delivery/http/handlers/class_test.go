@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -33,6 +34,24 @@ func (m *mockClassUseCase) GetClasses(_ context.Context, _ domainAuth.ContextPer
 
 func (m *mockClassUseCase) GetClassByID(_ context.Context, _ string, _ domainAuth.ContextPermission) (*classUseCase.ClassDTO, error) {
 	return m.class_, m.err
+}
+
+func (m *mockClassUseCase) CreateClass(_ context.Context, _ string, _ int, _ domainAuth.ContextPermission) (*classUseCase.ClassDTO, error) {
+	return m.class_, m.err
+}
+
+func (m *mockClassUseCase) UpdateClass(_ context.Context, _, _ string, _ *int, _ domainAuth.ContextPermission) (*classUseCase.ClassDTO, error) {
+	return m.class_, m.err
+}
+
+// --- Mock Validator ---
+
+type mockValidator struct {
+	err error
+}
+
+func (m *mockValidator) ValidateCtx(_ context.Context, _ interface{}) error {
+	return m.err
 }
 
 // --- Helpers ---
@@ -64,7 +83,7 @@ func makeClassDTO(name string, grade int) classUseCase.ClassDTO {
 func TestClassHandler_GetClasses_WithPermission_Returns200(t *testing.T) {
 	dto := makeClassDTO("10A", 10)
 	uc := &mockClassUseCase{classes: []classUseCase.ClassDTO{dto}}
-	h := handlers.NewClassHandler(uc)
+	h := handlers.NewClassHandler(uc, &mockValidator{})
 
 	perm := domainAuth.ContextPermission{UserID: "admin-1", Role: "ADMIN"}
 	c, rec := newContextWithPermission(http.MethodGet, "/api/v1/classes", &perm)
@@ -82,7 +101,7 @@ func TestClassHandler_GetClasses_WithPermission_Returns200(t *testing.T) {
 
 func TestClassHandler_GetClasses_NoPermission_Returns401(t *testing.T) {
 	uc := &mockClassUseCase{}
-	h := handlers.NewClassHandler(uc)
+	h := handlers.NewClassHandler(uc, &mockValidator{})
 
 	c, rec := newContextWithPermission(http.MethodGet, "/api/v1/classes", nil)
 
@@ -93,7 +112,7 @@ func TestClassHandler_GetClasses_NoPermission_Returns401(t *testing.T) {
 
 func TestClassHandler_GetClasses_UseCaseUnauthorized_Returns401(t *testing.T) {
 	uc := &mockClassUseCase{err: domainAuth.ErrUnauthorized}
-	h := handlers.NewClassHandler(uc)
+	h := handlers.NewClassHandler(uc, &mockValidator{})
 
 	perm := domainAuth.ContextPermission{UserID: "x", Role: "UNKNOWN"}
 	c, rec := newContextWithPermission(http.MethodGet, "/api/v1/classes", &perm)
@@ -105,7 +124,7 @@ func TestClassHandler_GetClasses_UseCaseUnauthorized_Returns401(t *testing.T) {
 
 func TestClassHandler_GetClasses_InternalError_Returns500(t *testing.T) {
 	uc := &mockClassUseCase{err: assert.AnError}
-	h := handlers.NewClassHandler(uc)
+	h := handlers.NewClassHandler(uc, &mockValidator{})
 
 	perm := domainAuth.ContextPermission{UserID: "admin-1", Role: "ADMIN"}
 	c, rec := newContextWithPermission(http.MethodGet, "/api/v1/classes", &perm)
@@ -120,7 +139,7 @@ func TestClassHandler_GetClasses_InternalError_Returns500(t *testing.T) {
 func TestClassHandler_GetClassById_ValidAccess_Returns200(t *testing.T) {
 	dto := makeClassDTO("10A", 10)
 	uc := &mockClassUseCase{class_: &dto}
-	h := handlers.NewClassHandler(uc)
+	h := handlers.NewClassHandler(uc, &mockValidator{})
 
 	perm := domainAuth.ContextPermission{UserID: "admin-1", Role: "ADMIN"}
 	c, rec := newContextWithPermission(http.MethodGet, "/api/v1/classes/some-id", &perm)
@@ -136,7 +155,7 @@ func TestClassHandler_GetClassById_ValidAccess_Returns200(t *testing.T) {
 
 func TestClassHandler_GetClassById_NoPermission_Returns401(t *testing.T) {
 	uc := &mockClassUseCase{}
-	h := handlers.NewClassHandler(uc)
+	h := handlers.NewClassHandler(uc, &mockValidator{})
 
 	c, rec := newContextWithPermission(http.MethodGet, "/api/v1/classes/some-id", nil)
 
@@ -147,7 +166,7 @@ func TestClassHandler_GetClassById_NoPermission_Returns401(t *testing.T) {
 
 func TestClassHandler_GetClassById_Unauthorized_Returns401(t *testing.T) {
 	uc := &mockClassUseCase{err: domainAuth.ErrUnauthorized}
-	h := handlers.NewClassHandler(uc)
+	h := handlers.NewClassHandler(uc, &mockValidator{})
 
 	perm := domainAuth.ContextPermission{UserID: "student-1", Role: "STUDENT"}
 	c, rec := newContextWithPermission(http.MethodGet, "/api/v1/classes/some-id", &perm)
@@ -159,7 +178,7 @@ func TestClassHandler_GetClassById_Unauthorized_Returns401(t *testing.T) {
 
 func TestClassHandler_GetClassById_InternalError_Returns500(t *testing.T) {
 	uc := &mockClassUseCase{err: assert.AnError}
-	h := handlers.NewClassHandler(uc)
+	h := handlers.NewClassHandler(uc, &mockValidator{})
 
 	perm := domainAuth.ContextPermission{UserID: "admin-1", Role: "ADMIN"}
 	c, rec := newContextWithPermission(http.MethodGet, "/api/v1/classes/some-id", &perm)
@@ -171,7 +190,7 @@ func TestClassHandler_GetClassById_InternalError_Returns500(t *testing.T) {
 
 func TestClassHandler_GetClassById_ErrClassNotFound_Returns401(t *testing.T) {
 	uc := &mockClassUseCase{err: classDomain.ErrClassNotFound}
-	h := handlers.NewClassHandler(uc)
+	h := handlers.NewClassHandler(uc, &mockValidator{})
 
 	perm := domainAuth.ContextPermission{UserID: "admin-1", Role: "ADMIN"}
 	c, rec := newContextWithPermission(http.MethodGet, "/api/v1/classes/some-id", &perm)
@@ -179,4 +198,201 @@ func TestClassHandler_GetClassById_ErrClassNotFound_Returns401(t *testing.T) {
 	err := h.GetClassById(c, "some-id")
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+}
+
+// --- Helper: echo context with JSON body ---
+
+func newContextWithJSONBody(method, path string, body string, perm *domainAuth.ContextPermission) (echo.Context, *httptest.ResponseRecorder) {
+	e := echo.New()
+	req := httptest.NewRequest(method, path, strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	if perm != nil {
+		c.Set(httpMiddleware.PermissionContextKey, *perm)
+	}
+	return c, rec
+}
+
+// --- CreateClass handler unit tests ---
+
+func TestClassHandler_CreateClass_NoPermission_Returns401(t *testing.T) {
+	uc := &mockClassUseCase{}
+	h := handlers.NewClassHandler(uc, &mockValidator{})
+
+	c, rec := newContextWithPermission(http.MethodPost, "/api/v1/classes", nil)
+
+	err := h.CreateClass(c)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+}
+
+func TestClassHandler_CreateClass_BadRequestBody_Returns400(t *testing.T) {
+	uc := &mockClassUseCase{}
+	h := handlers.NewClassHandler(uc, &mockValidator{})
+
+	perm := domainAuth.ContextPermission{UserID: "admin-1", Role: "ADMIN"}
+	c, rec := newContextWithJSONBody(http.MethodPost, "/api/v1/classes", `{invalid-json}`, &perm)
+
+	err := h.CreateClass(c)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+}
+
+func TestClassHandler_CreateClass_ValidationError_Returns422(t *testing.T) {
+	uc := &mockClassUseCase{}
+	h := handlers.NewClassHandler(uc, &mockValidator{err: assert.AnError})
+
+	perm := domainAuth.ContextPermission{UserID: "admin-1", Role: "ADMIN"}
+	c, rec := newContextWithJSONBody(http.MethodPost, "/api/v1/classes", `{"name":"X","grade":5}`, &perm)
+
+	err := h.CreateClass(c)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusUnprocessableEntity, rec.Code)
+}
+
+func TestClassHandler_CreateClass_ErrUnauthorized_Returns401(t *testing.T) {
+	dto := makeClassDTO("10A", 10)
+	uc := &mockClassUseCase{class_: &dto, err: domainAuth.ErrUnauthorized}
+	h := handlers.NewClassHandler(uc, &mockValidator{})
+
+	perm := domainAuth.ContextPermission{UserID: "teacher-1", Role: "TEACHER"}
+	c, rec := newContextWithJSONBody(http.MethodPost, "/api/v1/classes", `{"name":"10A","grade":10}`, &perm)
+
+	err := h.CreateClass(c)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+}
+
+func TestClassHandler_CreateClass_DomainError_Returns422(t *testing.T) {
+	uc := &mockClassUseCase{err: classDomain.ErrEmptyClassName}
+	h := handlers.NewClassHandler(uc, &mockValidator{})
+
+	perm := domainAuth.ContextPermission{UserID: "admin-1", Role: "ADMIN"}
+	c, rec := newContextWithJSONBody(http.MethodPost, "/api/v1/classes", `{"name":"","grade":5}`, &perm)
+
+	err := h.CreateClass(c)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusUnprocessableEntity, rec.Code)
+}
+
+func TestClassHandler_CreateClass_InternalError_Returns500(t *testing.T) {
+	uc := &mockClassUseCase{err: assert.AnError}
+	h := handlers.NewClassHandler(uc, &mockValidator{})
+
+	perm := domainAuth.ContextPermission{UserID: "admin-1", Role: "ADMIN"}
+	c, rec := newContextWithJSONBody(http.MethodPost, "/api/v1/classes", `{"name":"10A","grade":10}`, &perm)
+
+	err := h.CreateClass(c)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+}
+
+func TestClassHandler_CreateClass_Success_Returns201(t *testing.T) {
+	dto := makeClassDTO("10A", 10)
+	uc := &mockClassUseCase{class_: &dto}
+	h := handlers.NewClassHandler(uc, &mockValidator{})
+
+	perm := domainAuth.ContextPermission{UserID: "admin-1", Role: "ADMIN"}
+	c, rec := newContextWithJSONBody(http.MethodPost, "/api/v1/classes", `{"name":"10A","grade":10}`, &perm)
+
+	err := h.CreateClass(c)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusCreated, rec.Code)
+}
+
+// --- UpdateClass handler unit tests ---
+
+func TestClassHandler_UpdateClass_NoPermission_Returns401(t *testing.T) {
+	uc := &mockClassUseCase{}
+	h := handlers.NewClassHandler(uc, &mockValidator{})
+
+	c, rec := newContextWithPermission(http.MethodPut, "/api/v1/classes/some-id", nil)
+
+	err := h.UpdateClass(c, "some-id")
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+}
+
+func TestClassHandler_UpdateClass_BadRequestBody_Returns400(t *testing.T) {
+	uc := &mockClassUseCase{}
+	h := handlers.NewClassHandler(uc, &mockValidator{})
+
+	perm := domainAuth.ContextPermission{UserID: "admin-1", Role: "ADMIN"}
+	c, rec := newContextWithJSONBody(http.MethodPut, "/api/v1/classes/some-id", `{bad-json}`, &perm)
+
+	err := h.UpdateClass(c, "some-id")
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+}
+
+func TestClassHandler_UpdateClass_ValidationError_Returns422(t *testing.T) {
+	uc := &mockClassUseCase{}
+	h := handlers.NewClassHandler(uc, &mockValidator{err: assert.AnError})
+
+	perm := domainAuth.ContextPermission{UserID: "admin-1", Role: "ADMIN"}
+	c, rec := newContextWithJSONBody(http.MethodPut, "/api/v1/classes/some-id", `{"name":"10A"}`, &perm)
+
+	err := h.UpdateClass(c, "some-id")
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusUnprocessableEntity, rec.Code)
+}
+
+func TestClassHandler_UpdateClass_ErrUnauthorized_Returns401(t *testing.T) {
+	uc := &mockClassUseCase{err: domainAuth.ErrUnauthorized}
+	h := handlers.NewClassHandler(uc, &mockValidator{})
+
+	perm := domainAuth.ContextPermission{UserID: "admin-1", Role: "ADMIN"}
+	c, rec := newContextWithJSONBody(http.MethodPut, "/api/v1/classes/nonexistent", `{"name":"10A"}`, &perm)
+
+	err := h.UpdateClass(c, "nonexistent")
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+}
+
+func TestClassHandler_UpdateClass_DomainError_Returns422(t *testing.T) {
+	uc := &mockClassUseCase{err: classDomain.ErrEmptyClassName}
+	h := handlers.NewClassHandler(uc, &mockValidator{})
+
+	perm := domainAuth.ContextPermission{UserID: "admin-1", Role: "ADMIN"}
+	c, rec := newContextWithJSONBody(http.MethodPut, "/api/v1/classes/some-id", `{"name":""}`, &perm)
+
+	err := h.UpdateClass(c, "some-id")
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusUnprocessableEntity, rec.Code)
+}
+
+func TestClassHandler_UpdateClass_InternalError_Returns500(t *testing.T) {
+	uc := &mockClassUseCase{err: assert.AnError}
+	h := handlers.NewClassHandler(uc, &mockValidator{})
+
+	perm := domainAuth.ContextPermission{UserID: "admin-1", Role: "ADMIN"}
+	c, rec := newContextWithJSONBody(http.MethodPut, "/api/v1/classes/some-id", `{"name":"10A"}`, &perm)
+
+	err := h.UpdateClass(c, "some-id")
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+}
+
+func TestClassHandler_UpdateClass_Success_Returns200(t *testing.T) {
+	dto := makeClassDTO("10A-updated", 10)
+	uc := &mockClassUseCase{class_: &dto}
+	h := handlers.NewClassHandler(uc, &mockValidator{})
+
+	perm := domainAuth.ContextPermission{UserID: "admin-1", Role: "ADMIN"}
+	c, rec := newContextWithJSONBody(http.MethodPut, "/api/v1/classes/some-id", `{"name":"10A-updated"}`, &perm)
+
+	err := h.UpdateClass(c, "some-id")
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, rec.Code)
+}
+
+// --- CombinedHandler ---
+
+func TestNewCombinedHandler_ReturnsNonNil(t *testing.T) {
+	userH := handlers.NewUserHandler(&mockUserUseCase{})
+	authH := handlers.NewAuthHandler(&mockGoogleAuthUseCase{})
+	classH := handlers.NewClassHandler(&mockClassUseCase{}, &mockValidator{})
+	combined := handlers.NewCombinedHandler(userH, authH, classH)
+	assert.NotNil(t, combined)
 }

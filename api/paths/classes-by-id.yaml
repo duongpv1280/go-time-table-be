@@ -28,3 +28,39 @@ get:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
+put:
+  operationId: updateClass
+  summary: Update a class (ADMIN only)
+  security:
+    - BearerAuth: []
+  parameters:
+    - name: classId
+      in: path
+      required: true
+      schema:
+        type: string
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/UpdateClassRequest'
+  responses:
+    '200':
+      description: Class updated
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Class'
+    '401':
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    '422':
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationErrorResponse'
