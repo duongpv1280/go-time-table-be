@@ -4,9 +4,10 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 
-	api "gosample/internal/delivery/http"
+	api "gosample/internal/delivery/http/openapi"
 	httpMiddleware "gosample/internal/delivery/http/middleware"
 	domainAuth "gosample/internal/domain/auth"
 	classDomain "gosample/internal/domain/class"
@@ -25,7 +26,7 @@ func (h *ClassHandler) GetClasses(ctx echo.Context) error {
 	perm, ok := httpMiddleware.GetPermission(ctx)
 	if !ok {
 		return ctx.JSON(http.StatusUnauthorized, api.ErrorResponse{
-			Error:   "unauthorized",
+			Error:   api.Ptr("unauthorized"),
 			Message: "Missing permission context",
 		})
 	}
@@ -34,12 +35,12 @@ func (h *ClassHandler) GetClasses(ctx echo.Context) error {
 	if err != nil {
 		if errors.Is(err, domainAuth.ErrUnauthorized) {
 			return ctx.JSON(http.StatusUnauthorized, api.ErrorResponse{
-				Error:   "unauthorized",
+				Error:   api.Ptr("unauthorized"),
 				Message: "Access denied",
 			})
 		}
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{
-			Error:   "internal_error",
+			Error:   api.Ptr("internal_error"),
 			Message: "An unexpected error occurred",
 		})
 	}
@@ -51,7 +52,7 @@ func (h *ClassHandler) GetClassById(ctx echo.Context, classId string) error {
 	perm, ok := httpMiddleware.GetPermission(ctx)
 	if !ok {
 		return ctx.JSON(http.StatusUnauthorized, api.ErrorResponse{
-			Error:   "unauthorized",
+			Error:   api.Ptr("unauthorized"),
 			Message: "Missing permission context",
 		})
 	}
@@ -60,12 +61,12 @@ func (h *ClassHandler) GetClassById(ctx echo.Context, classId string) error {
 	if err != nil {
 		if errors.Is(err, domainAuth.ErrUnauthorized) || errors.Is(err, classDomain.ErrClassNotFound) {
 			return ctx.JSON(http.StatusUnauthorized, api.ErrorResponse{
-				Error:   "unauthorized",
+				Error:   api.Ptr("unauthorized"),
 				Message: "Access denied",
 			})
 		}
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{
-			Error:   "internal_error",
+			Error:   api.Ptr("internal_error"),
 			Message: "An unexpected error occurred",
 		})
 	}
@@ -75,7 +76,7 @@ func (h *ClassHandler) GetClassById(ctx echo.Context, classId string) error {
 
 func toAPIClass(dto *classUseCase.ClassDTO) api.Class {
 	return api.Class{
-		Id:        dto.ID,
+		Id:        uuid.MustParse(dto.ID),
 		Name:      dto.Name,
 		Grade:     dto.Grade,
 		CreatedAt: dto.CreatedAt,

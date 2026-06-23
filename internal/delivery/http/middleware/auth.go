@@ -6,7 +6,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	api "gosample/internal/delivery/http"
+	api "gosample/internal/delivery/http/openapi"
 	domainAuth "gosample/internal/domain/auth"
 )
 
@@ -18,7 +18,7 @@ func JWTAuth(jwtService domainAuth.IJWTService) echo.MiddlewareFunc {
 			authHeader := c.Request().Header.Get("Authorization")
 			if !strings.HasPrefix(authHeader, "Bearer ") {
 				return c.JSON(http.StatusUnauthorized, api.ErrorResponse{
-					Error:   "unauthorized",
+					Error:   api.Ptr("unauthorized"),
 					Message: "Missing or invalid authorization header",
 				})
 			}
@@ -26,13 +26,13 @@ func JWTAuth(jwtService domainAuth.IJWTService) echo.MiddlewareFunc {
 			claims, err := jwtService.Verify(c.Request().Context(), token)
 			if err != nil {
 				return c.JSON(http.StatusUnauthorized, api.ErrorResponse{
-					Error:   "unauthorized",
+					Error:   api.Ptr("unauthorized"),
 					Message: "Invalid or expired token",
 				})
 			}
 			if claims.UserID == "" || claims.Role == "" {
 				return c.JSON(http.StatusUnauthorized, api.ErrorResponse{
-					Error:   "unauthorized",
+					Error:   api.Ptr("unauthorized"),
 					Message: "Invalid or expired token",
 				})
 			}

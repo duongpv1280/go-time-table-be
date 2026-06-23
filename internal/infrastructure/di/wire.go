@@ -18,18 +18,16 @@ import (
 )
 
 type Application struct {
-	DB           *gorm.DB
-	Handler      *handlers.CombinedHandler
-	ClassHandler *handlers.ClassHandler
-	JWTService   domainAuth.IJWTService
+	DB         *gorm.DB
+	Handler    *handlers.CombinedHandler
+	JWTService domainAuth.IJWTService
 }
 
-func NewApplication(db *gorm.DB, handler *handlers.CombinedHandler, classHandler *handlers.ClassHandler, jwtService domainAuth.IJWTService) *Application {
+func NewApplication(db *gorm.DB, handler *handlers.CombinedHandler, jwtService domainAuth.IJWTService) *Application {
 	return &Application{
-		DB:           db,
-		Handler:      handler,
-		ClassHandler: classHandler,
-		JWTService:   jwtService,
+		DB:         db,
+		Handler:    handler,
+		JWTService: jwtService,
 	}
 }
 

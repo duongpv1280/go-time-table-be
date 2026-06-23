@@ -16,19 +16,19 @@ get:
       content:
         application/json:
           schema:
-            $ref: '../schemas/user.yaml'
+            $ref: '#/components/schemas/User'
     '404':
       description: User not found
       content:
         application/json:
           schema:
-            $ref: '../schemas/error-response.yaml'
+            $ref: '#/components/schemas/ErrorResponse'
     '500':
       description: Internal server error
       content:
         application/json:
           schema:
-            $ref: '../schemas/error-response.yaml'
+            $ref: '#/components/schemas/ErrorResponse'
 
 delete:
   summary: Delete user by ID
@@ -50,10 +50,10 @@ delete:
       content:
         application/json:
           schema:
-            $ref: '../schemas/error-response.yaml'
+            $ref: '#/components/schemas/ErrorResponse'
     '500':
       description: Internal server error
       content:
         application/json:
           schema:
-            $ref: '../schemas/error-response.yaml'
+            $ref: '#/components/schemas/ErrorResponse'

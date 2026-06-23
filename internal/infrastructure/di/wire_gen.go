@@ -41,29 +41,27 @@ func InitializeApp() (*Application, error) {
 	ijwtService := auth.NewJWTService(configConfig)
 	iGoogleAuthUseCase := auth2.NewGoogleAuthUseCase(iGoogleVerifier, iUserRepository, iRoleRepository, iPermissionService, ijwtService)
 	authHandler := handlers.NewAuthHandler(iGoogleAuthUseCase)
-	combinedHandler := handlers.NewCombinedHandler(userHandler, authHandler)
 	iClassRepository := db.NewGormClassRepository(gormDB)
 	iClassUseCase := class.NewClassUseCase(iClassRepository)
 	classHandler := handlers.NewClassHandler(iClassUseCase)
-	application := NewApplication(gormDB, combinedHandler, classHandler, ijwtService)
+	combinedHandler := handlers.NewCombinedHandler(userHandler, authHandler, classHandler)
+	application := NewApplication(gormDB, combinedHandler, ijwtService)
 	return application, nil
 }
 
 // wire.go:
 
 type Application struct {
-	DB           *gorm.DB
-	Handler      *handlers.CombinedHandler
-	ClassHandler *handlers.ClassHandler
-	JWTService   auth3.IJWTService
+	DB         *gorm.DB
+	Handler    *handlers.CombinedHandler
+	JWTService auth3.IJWTService
 }
 
-func NewApplication(db2 *gorm.DB, handler *handlers.CombinedHandler, classHandler *handlers.ClassHandler, jwtService auth3.IJWTService) *Application {
+func NewApplication(db2 *gorm.DB, handler *handlers.CombinedHandler, jwtService auth3.IJWTService) *Application {
 	return &Application{
-		DB:           db2,
-		Handler:      handler,
-		ClassHandler: classHandler,
-		JWTService:   jwtService,
+		DB:         db2,
+		Handler:    handler,
+		JWTService: jwtService,
 	}
 }
 
