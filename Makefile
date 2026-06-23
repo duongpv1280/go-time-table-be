@@ -69,5 +69,5 @@ migrate-create:
 clean:
 	rm -rf bin/
 	rm -f gorm.db
-	rm -f internal/delivery/http/api.gen.go
+	rm -f internal/delivery/http/openapi/api.gen.go
 	rm -f internal/infrastructure/di/wire_gen.go

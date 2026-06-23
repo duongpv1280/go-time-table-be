@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	api "gosample/internal/delivery/http"
+	api "gosample/internal/delivery/http/openapi"
 	"gosample/internal/delivery/http/handlers"
 	domainAuth "gosample/internal/domain/auth"
 	authUseCase "gosample/internal/usecase/auth"
@@ -68,9 +68,10 @@ func TestAuthHandler_GoogleAuth_Success_Returns200(t *testing.T) {
 	var resp api.AuthResponse
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
 	assert.Equal(t, "Alice", resp.Name)
-	assert.Equal(t, "alice@example.com", resp.Email)
-	assert.Equal(t, "ADMIN", resp.Role)
-	assert.Equal(t, "jwt.token.here", resp.Token)
+	assert.Equal(t, api.AuthResponseRole("ADMIN"), resp.Role)
+	require.NotNil(t, resp.Token)
+	assert.Equal(t, "jwt.token.here", *resp.Token)
+	assert.Equal(t, "alice@example.com", string(resp.Email))
 }
 
 func TestAuthHandler_GoogleAuth_InvalidToken_Returns401(t *testing.T) {
@@ -86,7 +87,8 @@ func TestAuthHandler_GoogleAuth_InvalidToken_Returns401(t *testing.T) {
 
 	var resp api.ErrorResponse
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
-	assert.Equal(t, "invalid_token", resp.Error)
+	require.NotNil(t, resp.Error)
+	assert.Equal(t, "invalid_token", *resp.Error)
 }
 
 func TestAuthHandler_GoogleAuth_InternalError_Returns500(t *testing.T) {
@@ -102,7 +104,8 @@ func TestAuthHandler_GoogleAuth_InternalError_Returns500(t *testing.T) {
 
 	var resp api.ErrorResponse
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
-	assert.Equal(t, "internal_error", resp.Error)
+	require.NotNil(t, resp.Error)
+	assert.Equal(t, "internal_error", *resp.Error)
 }
 
 func TestAuthHandler_GoogleAuth_BadRequestBody_Returns400(t *testing.T) {

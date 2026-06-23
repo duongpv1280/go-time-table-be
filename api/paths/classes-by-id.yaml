@@ -15,16 +15,16 @@ get:
       content:
         application/json:
           schema:
-            $ref: '../schemas/class.yaml'
+            $ref: '#/components/schemas/Class'
     '401':
       description: Unauthorized or class not found
       content:
         application/json:
           schema:
-            $ref: '../schemas/error-response.yaml'
+            $ref: '#/components/schemas/ErrorResponse'
     '500':
       description: Internal server error
       content:
         application/json:
           schema:
-            $ref: '../schemas/error-response.yaml'
+            $ref: '#/components/schemas/ErrorResponse'

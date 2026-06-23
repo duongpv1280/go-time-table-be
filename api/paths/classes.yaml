@@ -9,16 +9,16 @@ get:
       content:
         application/json:
           schema:
-            $ref: '../schemas/list-classes-response.yaml'
+            $ref: '#/components/schemas/ListClassesResponse'
     '401':
       description: Unauthorized
       content:
         application/json:
           schema:
-            $ref: '../schemas/error-response.yaml'
+            $ref: '#/components/schemas/ErrorResponse'
     '500':
       description: Internal server error
       content:
         application/json:
           schema:
-            $ref: '../schemas/error-response.yaml'
+            $ref: '#/components/schemas/ErrorResponse'

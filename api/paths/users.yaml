@@ -20,13 +20,13 @@ get:
       content:
         application/json:
           schema:
-            $ref: '../schemas/list-users-response.yaml'
+            $ref: '#/components/schemas/ListUsersResponse'
     '500':
       description: Internal server error
       content:
         application/json:
           schema:
-            $ref: '../schemas/error-response.yaml'
+            $ref: '#/components/schemas/ErrorResponse'
 
 post:
   summary: Create a new user
@@ -41,16 +41,16 @@ post:
       content:
         application/json:
           schema:
-            $ref: '../schemas/user.yaml'
+            $ref: '#/components/schemas/User'
     '400':
       description: Invalid input
       content:
         application/json:
           schema:
-            $ref: '../schemas/error-response.yaml'
+            $ref: '#/components/schemas/ErrorResponse'
     '500':
       description: Internal server error
       content:
         application/json:
           schema:
-            $ref: '../schemas/error-response.yaml'
+            $ref: '#/components/schemas/ErrorResponse'

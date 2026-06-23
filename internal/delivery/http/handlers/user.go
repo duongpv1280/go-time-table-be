@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	api "gosample/internal/delivery/http"
+	api "gosample/internal/delivery/http/openapi"
 	"gosample/internal/domain/user"
 	userUseCase "gosample/internal/usecase/user"
 

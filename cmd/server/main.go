@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"gosample/internal/delivery/http"
 	httpMiddleware "gosample/internal/delivery/http/middleware"
+	openapi "gosample/internal/delivery/http/openapi"
 	"gosample/internal/infrastructure/config"
 	"gosample/internal/infrastructure/di"
 
@@ -28,13 +28,12 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	http.RegisterHandlers(e, app.Handler)
-
-	apiV1 := e.Group("/api/v1")
-	apiV1.Use(httpMiddleware.JWTAuth(app.JWTService))
-	apiV1.GET("/classes", app.ClassHandler.GetClasses)
-	apiV1.GET("/classes/:classId", func(c echo.Context) error {
-		return app.ClassHandler.GetClassById(c, c.Param("classId"))
+	jwtMiddleware := httpMiddleware.JWTAuth(app.JWTService)
+	openapi.RegisterHandlersWithOptions(e, app.Handler, openapi.RegisterHandlersOptions{
+		OperationMiddlewares: map[string][]echo.MiddlewareFunc{
+			"getClasses":   {jwtMiddleware},
+			"getClassById": {jwtMiddleware},
+		},
 	})
 
 	addr := fmt.Sprintf(":%s", cfg.ServerPort)

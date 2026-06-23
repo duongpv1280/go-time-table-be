@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 make generate      # Run oapi-codegen + wire (required before build/run after any spec/DI change)
-make oapi-codegen  # Regenerate api.gen.go from api/root.yaml only
+make oapi-codegen  # Regenerate internal/delivery/http/openapi/api.gen.go from api/root.yaml only
 make wire          # Regenerate wire_gen.go only
 make run           # Generate + start Echo server on :8080 (uses/creates gorm.db SQLite file)
 make build         # Generate + compile to bin/server
@@ -35,8 +35,9 @@ Clean Architecture + DDD with strict dependency direction: Delivery → Usecase 
 **Usecase** (`internal/usecase/user/`) — orchestrates domain objects. Accepts/returns plain DTOs (no domain types leak out). Converts string inputs to domain value objects before calling the repository.
 
 **Delivery** (`internal/delivery/http/`) — Echo v4 HTTP layer, split into two levels:
-- `internal/delivery/http/` — two files: `api.gen.go` (generated; never edit manually) defines `ServerInterface`, request parameter/body types, and `RegisterHandlers`; `types.go` (hand-maintained) defines response types (`User`, `ErrorResponse`, `Pagination`, `ListUsersResponse`) that mirror the OpenAPI schemas — update it whenever a response schema changes.
-- `internal/delivery/http/handlers/` — concrete handler structs implementing `ServerInterface`. Each resource gets its own file (e.g. `user.go`). Handlers translate HTTP concerns (bind, status codes) to usecase calls and map domain errors to HTTP responses via `errors.Is`.
+- `internal/delivery/http/openapi/` — **generated** package (`package openapi`). `api.gen.go` is produced by `make oapi-codegen` and defines `ServerInterface`, all request/response types, and `RegisterHandlers`. Never edit manually. `ptr.go` is a small hand-written helper (the `Ptr[T]` generic) that is NOT overwritten by generation.
+- `internal/delivery/http/handlers/` — concrete handler structs implementing `ServerInterface`. Each resource gets its own file (`user.go`, `auth.go`, `class.go`). `combined.go` embeds all handlers into `CombinedHandler` which satisfies the full `ServerInterface`. Handlers translate HTTP concerns (bind, status codes) to usecase calls and map domain errors to HTTP responses via `errors.Is`.
+- `internal/delivery/http/middleware/` — Echo middleware (JWT auth, permission extraction).
 
 **Infrastructure** (`internal/infrastructure/db/`) — GORM/SQLite implementation of `UserRepository`. Uses a separate `UserModel` struct (with GORM tags) that is mapped to/from domain `User` to keep database concerns out of the domain.
 
@@ -54,37 +55,40 @@ Clean Architecture + DDD with strict dependency direction: Delivery → Usecase 
 
 ## API spec structure
 
-The OpenAPI spec is split into multiple files under `api/` and assembled via `$ref`:
+The OpenAPI spec lives under `api/`. `root.yaml` is the single source of truth for oapi-codegen — all component schemas are defined **inline** there with `#/components/schemas/X` cross-references so oapi-codegen can emit named Go types.
 
 ```
 api/
-├── root.yaml               # Entry point — oapi-codegen reads this
+├── root.yaml               # Entry point — inline component schemas + path refs
 ├── paths/
 │   ├── users.yaml          # GET /users, POST /users
-│   └── users-by-id.yaml   # GET /users/{id}, DELETE /users/{id}
+│   ├── users-by-id.yaml   # GET /users/{id}, DELETE /users/{id}
+│   ├── classes.yaml        # GET /classes (JWT-protected)
+│   ├── classes-by-id.yaml # GET /classes/{classId} (JWT-protected)
+│   └── auth.yaml           # POST /auth/google
 ├── requestBodies/
 │   └── create-user.yaml   # Reusable request body definitions
 └── schemas/
-    ├── user.yaml           # User response object
-    ├── list-users-item.yaml
-    ├── create-user-request.yaml
+    ├── user.yaml           # Schema docs (not read by oapi-codegen directly)
+    ├── class.yaml
+    ├── error-response.yaml
     ├── pagination.yaml
-    └── error-response.yaml
+    └── ...
 ```
 
 **Rules:**
-- `root.yaml` only declares `openapi`, `info`, and `paths` — each path value is a `$ref` to a file in `paths/`.
-- `paths/*.yaml` files are Path Item Objects (no wrapping key); they contain the HTTP methods (`get`, `post`, etc.) directly.
-- `requestBodies/*.yaml` files are Request Body Objects — wrap a schema `$ref` with `required` and `content`.
-- `schemas/*.yaml` files are Schema Objects — no wrapping key, just `type`, `properties`, etc.
-- Cross-references use relative paths: `../schemas/foo.yaml`, `../requestBodies/bar.yaml`.
-- `oapi-codegen` reads `api/root.yaml` and resolves all `$ref`s automatically; run `make oapi-codegen` after any spec change.
+- `root.yaml` declares `openapi`, `info`, `paths` (each a `$ref` to `paths/`), and **inline** `components/schemas` — do NOT use `$ref` to external files in the components section.
+- `paths/*.yaml` files reference response schemas via `#/components/schemas/X` (root document reference), not via relative file paths. This is what makes oapi-codegen emit named types.
+- `requestBodies/*.yaml` files may still use `$ref: '../schemas/X.yaml'` for request body schemas — these generate inline request-body types (e.g., `CreateUserJSONBody`) which is fine.
+- `schemas/*.yaml` files are kept for documentation tools (Swagger UI, ReDoc) but are NOT read directly by oapi-codegen.
+- Run `make oapi-codegen` after any spec change; run `make wire` after any DI provider change.
 
 ## Key conventions
 
 - Domain fields are unexported; use `NewUser` to construct and `RestoreUser` to reconstruct from storage.
 - `NewEmail`/`NewName`/`ParseID` are the only constructors for value objects — always use them, never set `.value` directly.
 - Domain errors are sentinel `errors.New` values in the domain package; handlers use `errors.Is` to map them to HTTP codes.
-- Generated files (`api.gen.go`, `wire_gen.go`) are committed to the repo and must be regenerated after any change to the API spec or DI providers.
-- `types.go` is hand-maintained and must be kept in sync with `api/schemas/*.yaml`; oapi-codegen does not generate response types from external `$ref`s.
+- Generated files (`internal/delivery/http/openapi/api.gen.go`, `wire_gen.go`) are committed to the repo and must be regenerated after any change to the API spec or DI providers.
+- `ErrorResponse.Error` is a `*string` (optional field). Use `openapi.Ptr("error_code")` from the generated package to set it.
+- JWT middleware for class endpoints is attached via `openapi.RegisterHandlersWithOptions` `OperationMiddlewares` in `cmd/server/main.go` — not via manual route registration.
 - SQLite database file (`gorm.db`) is local only; `make clean` removes it.

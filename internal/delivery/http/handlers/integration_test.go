@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	api "gosample/internal/delivery/http"
+	api "gosample/internal/delivery/http/openapi"
 	httpMiddleware "gosample/internal/delivery/http/middleware"
 	"gosample/internal/delivery/http/handlers"
 	domainAuth "gosample/internal/domain/auth"
