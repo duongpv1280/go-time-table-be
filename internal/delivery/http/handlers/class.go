@@ -7,9 +7,10 @@ import (
 	"strings"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 
-	api "gosample/internal/delivery/http"
+	api "gosample/internal/delivery/http/openapi"
 	httpMiddleware "gosample/internal/delivery/http/middleware"
 	httpvalidator "gosample/internal/delivery/http/validator"
 	"gosample/internal/delivery/http/validator/rules"
@@ -31,7 +32,7 @@ func (h *ClassHandler) GetClasses(ctx echo.Context) error {
 	perm, ok := httpMiddleware.GetPermission(ctx)
 	if !ok {
 		return ctx.JSON(http.StatusUnauthorized, api.ErrorResponse{
-			Error:   "unauthorized",
+			Error:   api.Ptr("unauthorized"),
 			Message: "Missing permission context",
 		})
 	}
@@ -40,12 +41,12 @@ func (h *ClassHandler) GetClasses(ctx echo.Context) error {
 	if err != nil {
 		if errors.Is(err, domainAuth.ErrUnauthorized) {
 			return ctx.JSON(http.StatusUnauthorized, api.ErrorResponse{
-				Error:   "unauthorized",
+				Error:   api.Ptr("unauthorized"),
 				Message: "Access denied",
 			})
 		}
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{
-			Error:   "internal_error",
+			Error:   api.Ptr("internal_error"),
 			Message: "An unexpected error occurred",
 		})
 	}
@@ -57,7 +58,7 @@ func (h *ClassHandler) GetClassById(ctx echo.Context, classId string) error {
 	perm, ok := httpMiddleware.GetPermission(ctx)
 	if !ok {
 		return ctx.JSON(http.StatusUnauthorized, api.ErrorResponse{
-			Error:   "unauthorized",
+			Error:   api.Ptr("unauthorized"),
 			Message: "Missing permission context",
 		})
 	}
@@ -66,12 +67,12 @@ func (h *ClassHandler) GetClassById(ctx echo.Context, classId string) error {
 	if err != nil {
 		if errors.Is(err, domainAuth.ErrUnauthorized) || errors.Is(err, classDomain.ErrClassNotFound) {
 			return ctx.JSON(http.StatusUnauthorized, api.ErrorResponse{
-				Error:   "unauthorized",
+				Error:   api.Ptr("unauthorized"),
 				Message: "Access denied",
 			})
 		}
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{
-			Error:   "internal_error",
+			Error:   api.Ptr("internal_error"),
 			Message: "An unexpected error occurred",
 		})
 	}
@@ -83,7 +84,7 @@ func (h *ClassHandler) CreateClass(ctx echo.Context) error {
 	perm, ok := httpMiddleware.GetPermission(ctx)
 	if !ok {
 		return ctx.JSON(http.StatusUnauthorized, api.ErrorResponse{
-			Error:   "unauthorized",
+			Error:   api.Ptr("unauthorized"),
 			Message: "Missing permission context",
 		})
 	}
@@ -91,7 +92,7 @@ func (h *ClassHandler) CreateClass(ctx echo.Context) error {
 	var req api.CreateClassRequest
 	if err := ctx.Bind(&req); err != nil {
 		return ctx.JSON(http.StatusBadRequest, api.ErrorResponse{
-			Error:   "bad_request",
+			Error:   api.Ptr("bad_request"),
 			Message: "Invalid request body",
 		})
 	}
@@ -104,18 +105,18 @@ func (h *ClassHandler) CreateClass(ctx echo.Context) error {
 	if err != nil {
 		if errors.Is(err, domainAuth.ErrUnauthorized) {
 			return ctx.JSON(http.StatusUnauthorized, api.ErrorResponse{
-				Error:   "unauthorized",
+				Error:   api.Ptr("unauthorized"),
 				Message: "Access denied",
 			})
 		}
 		if errors.Is(err, classDomain.ErrEmptyClassName) || errors.Is(err, classDomain.ErrInvalidGrade) {
 			return ctx.JSON(http.StatusUnprocessableEntity, api.ErrorResponse{
-				Error:   "validation_error",
+				Error:   api.Ptr("validation_error"),
 				Message: err.Error(),
 			})
 		}
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{
-			Error:   "internal_error",
+			Error:   api.Ptr("internal_error"),
 			Message: "An unexpected error occurred",
 		})
 	}
@@ -127,7 +128,7 @@ func (h *ClassHandler) UpdateClass(ctx echo.Context, classId string) error {
 	perm, ok := httpMiddleware.GetPermission(ctx)
 	if !ok {
 		return ctx.JSON(http.StatusUnauthorized, api.ErrorResponse{
-			Error:   "unauthorized",
+			Error:   api.Ptr("unauthorized"),
 			Message: "Missing permission context",
 		})
 	}
@@ -135,7 +136,7 @@ func (h *ClassHandler) UpdateClass(ctx echo.Context, classId string) error {
 	var req api.UpdateClassRequest
 	if err := ctx.Bind(&req); err != nil {
 		return ctx.JSON(http.StatusBadRequest, api.ErrorResponse{
-			Error:   "bad_request",
+			Error:   api.Ptr("bad_request"),
 			Message: "Invalid request body",
 		})
 	}
@@ -146,22 +147,27 @@ func (h *ClassHandler) UpdateClass(ctx echo.Context, classId string) error {
 		return validationError(ctx, err)
 	}
 
-	dto, err := h.useCase.UpdateClass(reqCtx, classId, req.Name, req.Grade, perm)
+	name := ""
+	if req.Name != nil {
+		name = *req.Name
+	}
+
+	dto, err := h.useCase.UpdateClass(reqCtx, classId, name, req.Grade, perm)
 	if err != nil {
 		if errors.Is(err, domainAuth.ErrUnauthorized) {
 			return ctx.JSON(http.StatusUnauthorized, api.ErrorResponse{
-				Error:   "unauthorized",
+				Error:   api.Ptr("unauthorized"),
 				Message: "Access denied",
 			})
 		}
 		if errors.Is(err, classDomain.ErrEmptyClassName) || errors.Is(err, classDomain.ErrInvalidGrade) || errors.Is(err, classDomain.ErrInvalidClassID) {
 			return ctx.JSON(http.StatusUnprocessableEntity, api.ErrorResponse{
-				Error:   "validation_error",
+				Error:   api.Ptr("validation_error"),
 				Message: err.Error(),
 			})
 		}
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{
-			Error:   "internal_error",
+			Error:   api.Ptr("internal_error"),
 			Message: "An unexpected error occurred",
 		})
 	}
@@ -178,15 +184,15 @@ func validationError(ctx echo.Context, err error) error {
 		}
 	}
 	return ctx.JSON(http.StatusUnprocessableEntity, api.ValidationErrorResponse{
-		Error:   "validation_error",
-		Message: "Validation failed",
-		Fields:  fields,
+		Error:   api.Ptr("validation_error"),
+		Message: api.Ptr("Validation failed"),
+		Fields:  &fields,
 	})
 }
 
 func toAPIClass(dto *classUseCase.ClassDTO) api.Class {
 	return api.Class{
-		Id:        dto.ID,
+		Id:        uuid.MustParse(dto.ID),
 		Name:      dto.Name,
 		Grade:     dto.Grade,
 		CreatedAt: dto.CreatedAt,

@@ -9,48 +9,46 @@ get:
       content:
         application/json:
           schema:
-            $ref: '../schemas/list-classes-response.yaml'
+            $ref: '#/components/schemas/ListClassesResponse'
     '401':
       description: Unauthorized
       content:
         application/json:
           schema:
-            $ref: '../schemas/error-response.yaml'
+            $ref: '#/components/schemas/ErrorResponse'
     '500':
       description: Internal server error
       content:
         application/json:
           schema:
-            $ref: '../schemas/error-response.yaml'
+            $ref: '#/components/schemas/ErrorResponse'
 post:
   operationId: createClass
   summary: Create a new class (ADMIN only)
   security:
     - BearerAuth: []
   requestBody:
-    $ref: '../requestBodies/create-class.yaml'
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/CreateClassRequest'
   responses:
     '201':
       description: Class created
       content:
         application/json:
           schema:
-            $ref: '../schemas/class.yaml'
+            $ref: '#/components/schemas/Class'
     '401':
       description: Unauthorized
       content:
         application/json:
           schema:
-            $ref: '../schemas/error-response.yaml'
-    '403':
-      description: Forbidden
-      content:
-        application/json:
-          schema:
-            $ref: '../schemas/error-response.yaml'
+            $ref: '#/components/schemas/ErrorResponse'
     '422':
       description: Validation error
       content:
         application/json:
           schema:
-            $ref: '../schemas/error-response.yaml'
+            $ref: '#/components/schemas/ValidationErrorResponse'

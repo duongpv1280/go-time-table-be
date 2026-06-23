@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	api "gosample/internal/delivery/http"
+	api "gosample/internal/delivery/http/openapi"
 	"gosample/internal/delivery/http/handlers"
 	userDomain "gosample/internal/domain/user"
 	userUseCase "gosample/internal/usecase/user"

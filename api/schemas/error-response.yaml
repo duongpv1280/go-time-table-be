@@ -2,6 +2,9 @@ type: object
 required:
   - message
 properties:
+  error:
+    type: string
+    example: not_found
   message:
     type: string
     example: something went wrong

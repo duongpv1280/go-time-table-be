@@ -15,19 +15,19 @@ get:
       content:
         application/json:
           schema:
-            $ref: '../schemas/class.yaml'
+            $ref: '#/components/schemas/Class'
     '401':
       description: Unauthorized or class not found
       content:
         application/json:
           schema:
-            $ref: '../schemas/error-response.yaml'
+            $ref: '#/components/schemas/ErrorResponse'
     '500':
       description: Internal server error
       content:
         application/json:
           schema:
-            $ref: '../schemas/error-response.yaml'
+            $ref: '#/components/schemas/ErrorResponse'
 put:
   operationId: updateClass
   summary: Update a class (ADMIN only)
@@ -40,29 +40,27 @@ put:
       schema:
         type: string
   requestBody:
-    $ref: '../requestBodies/update-class.yaml'
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/UpdateClassRequest'
   responses:
     '200':
       description: Class updated
       content:
         application/json:
           schema:
-            $ref: '../schemas/class.yaml'
+            $ref: '#/components/schemas/Class'
     '401':
       description: Unauthorized
       content:
         application/json:
           schema:
-            $ref: '../schemas/error-response.yaml'
-    '403':
-      description: Forbidden
-      content:
-        application/json:
-          schema:
-            $ref: '../schemas/error-response.yaml'
+            $ref: '#/components/schemas/ErrorResponse'
     '422':
       description: Validation error
       content:
         application/json:
           schema:
-            $ref: '../schemas/error-response.yaml'
+            $ref: '#/components/schemas/ValidationErrorResponse'

@@ -392,6 +392,7 @@ func TestClassHandler_UpdateClass_Success_Returns200(t *testing.T) {
 func TestNewCombinedHandler_ReturnsNonNil(t *testing.T) {
 	userH := handlers.NewUserHandler(&mockUserUseCase{})
 	authH := handlers.NewAuthHandler(&mockGoogleAuthUseCase{})
-	combined := handlers.NewCombinedHandler(userH, authH)
+	classH := handlers.NewClassHandler(&mockClassUseCase{}, &mockValidator{})
+	combined := handlers.NewCombinedHandler(userH, authH, classH)
 	assert.NotNil(t, combined)
 }

@@ -4,11 +4,12 @@ import (
 	"errors"
 	"net/http"
 
-	api "gosample/internal/delivery/http"
+	api "gosample/internal/delivery/http/openapi"
 	domainAuth "gosample/internal/domain/auth"
 	authUseCase "gosample/internal/usecase/auth"
 
 	"github.com/labstack/echo/v4"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 type AuthHandler struct {
@@ -31,21 +32,21 @@ func (h *AuthHandler) GoogleAuth(ctx echo.Context) error {
 	if err != nil {
 		if errors.Is(err, domainAuth.ErrInvalidToken) {
 			return ctx.JSON(http.StatusUnauthorized, api.ErrorResponse{
-				Error:   "invalid_token",
+				Error:   api.Ptr("invalid_token"),
 				Message: "Google ID token is invalid or expired",
 			})
 		}
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{
-			Error:   "internal_error",
+			Error:   api.Ptr("internal_error"),
 			Message: "An unexpected error occurred",
 		})
 	}
 
 	return ctx.JSON(http.StatusOK, api.AuthResponse{
 		Name:        result.Name,
-		Email:       result.Email,
-		Role:        result.Role,
-		Token:       result.Token,
+		Email:       openapi_types.Email(result.Email),
+		Role:        api.AuthResponseRole(result.Role),
+		Token:       api.Ptr(result.Token),
 		Permissions: result.Permissions,
 	})
 }

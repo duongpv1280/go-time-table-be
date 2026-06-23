@@ -8,28 +8,176 @@ paths:
     $ref: './paths/users.yaml'
   /users/{id}:
     $ref: './paths/users-by-id.yaml'
+  /classes:
+    $ref: './paths/classes.yaml'
+  /classes/{classId}:
+    $ref: './paths/classes-by-id.yaml'
   /auth/google:
     $ref: './paths/auth.yaml'
 components:
   schemas:
     User:
-      $ref: './schemas/user.yaml'
+      type: object
+      required: [id, email, name, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        name:
+          type: string
+          example: John Doe
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
     ErrorResponse:
-      $ref: './schemas/error-response.yaml'
+      type: object
+      required: [message]
+      properties:
+        error:
+          type: string
+          example: not_found
+        message:
+          type: string
+          example: something went wrong
+
     Pagination:
-      $ref: './schemas/pagination.yaml'
+      type: object
+      required: [page, perPage, total]
+      properties:
+        page:
+          type: integer
+          example: 1
+        perPage:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 100
+
     ListUsersResponse:
-      $ref: './schemas/list-users-response.yaml'
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
     CreateUserRequest:
-      $ref: './schemas/create-user-request.yaml'
+      type: object
+      required: [email, name]
+      properties:
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+
+    Class:
+      type: object
+      required: [id, name, grade, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        grade:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ListClassesResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Class'
+
     GoogleAuthRequest:
-      $ref: './schemas/google-auth-request.yaml'
+      type: object
+      required: [idToken]
+      properties:
+        idToken:
+          type: string
+
     AuthResponse:
-      $ref: './schemas/auth-response.yaml'
+      type: object
+      required: [name, email, role, permissions]
+      properties:
+        name:
+          type: string
+          example: Mr. A
+        email:
+          type: string
+          format: email
+          example: teacher.a@school.com
+        role:
+          type: string
+          enum: [ADMIN, TEACHER, STUDENT]
+          example: TEACHER
+        token:
+          type: string
+          description: JWT token for subsequent API calls
+        permissions:
+          type: object
+          description: Resource permissions derived from the user's role
+          additionalProperties: {}
+
     CreateClassRequest:
-      $ref: './schemas/create-class-request.yaml'
+      type: object
+      required: [name, grade]
+      properties:
+        name:
+          type: string
+          x-oapi-codegen-extra-tags:
+            validate: "required,notblank,unique_in=classes:name"
+        grade:
+          type: integer
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=1"
+
     UpdateClassRequest:
-      $ref: './schemas/update-class-request.yaml'
+      type: object
+      properties:
+        name:
+          type: string
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,unique_in=classes:name"
+        grade:
+          type: integer
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,min=1"
+
+    ValidationErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        fields:
+          type: object
+          additionalProperties:
+            type: string
+
   securitySchemes:
     BearerAuth:
       type: http

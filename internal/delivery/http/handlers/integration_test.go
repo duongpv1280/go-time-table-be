@@ -16,7 +16,7 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
-	api "gosample/internal/delivery/http"
+	api "gosample/internal/delivery/http/openapi"
 	httpMiddleware "gosample/internal/delivery/http/middleware"
 	"gosample/internal/delivery/http/handlers"
 	"gosample/internal/delivery/http/validator/rules"
@@ -292,8 +292,8 @@ func TestIntegration_TCINT01_PostDuplicateName_Returns422(t *testing.T) {
 	require.Equal(t, http.StatusUnprocessableEntity, rec.Code)
 	var resp api.ValidationErrorResponse
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
-	assert.Equal(t, "validation_error", resp.Error)
-	_, hasName := resp.Fields["name"]
+	assert.Equal(t, "validation_error", *resp.Error)
+	_, hasName := (*resp.Fields)["name"]
 	assert.True(t, hasName, "expected fields.name in response")
 }
 
@@ -315,8 +315,8 @@ func TestIntegration_TCINT02_PutDuplicateName_Returns422(t *testing.T) {
 	require.Equal(t, http.StatusUnprocessableEntity, rec.Code)
 	var resp api.ValidationErrorResponse
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
-	assert.Equal(t, "validation_error", resp.Error)
-	_, hasName := resp.Fields["name"]
+	assert.Equal(t, "validation_error", *resp.Error)
+	_, hasName := (*resp.Fields)["name"]
 	assert.True(t, hasName, "expected fields.name in response")
 }
 
@@ -435,7 +435,7 @@ func TestIntegration_TC068_PostMissingName_Returns422(t *testing.T) {
 	require.Equal(t, http.StatusUnprocessableEntity, rec.Code)
 	var resp api.ValidationErrorResponse
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
-	_, hasName := resp.Fields["name"]
+	_, hasName := (*resp.Fields)["name"]
 	assert.True(t, hasName, "expected fields.name in response")
 }
 
@@ -454,7 +454,7 @@ func TestIntegration_TC069_PostMissingGrade_Returns422(t *testing.T) {
 	require.Equal(t, http.StatusUnprocessableEntity, rec.Code)
 	var resp api.ValidationErrorResponse
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
-	_, hasGrade := resp.Fields["grade"]
+	_, hasGrade := (*resp.Fields)["grade"]
 	assert.True(t, hasGrade, "expected fields.grade in response")
 }
 
@@ -473,7 +473,7 @@ func TestIntegration_TC070_PostGradeZero_Returns422(t *testing.T) {
 	require.Equal(t, http.StatusUnprocessableEntity, rec.Code)
 	var resp api.ValidationErrorResponse
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
-	_, hasGrade := resp.Fields["grade"]
+	_, hasGrade := (*resp.Fields)["grade"]
 	assert.True(t, hasGrade, "expected fields.grade in response")
 }
 
@@ -492,7 +492,7 @@ func TestIntegration_TC073_PostWhitespaceOnlyName_Returns422(t *testing.T) {
 	require.Equal(t, http.StatusUnprocessableEntity, rec.Code)
 	var resp api.ValidationErrorResponse
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
-	_, hasName := resp.Fields["name"]
+	_, hasName := (*resp.Fields)["name"]
 	assert.True(t, hasName, "expected fields.name in response")
 }
 

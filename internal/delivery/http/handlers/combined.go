@@ -1,11 +1,12 @@
 package handlers
 
-// CombinedHandler embeds UserHandler and AuthHandler to satisfy the full ServerInterface.
+// CombinedHandler embeds UserHandler, AuthHandler, and ClassHandler to satisfy the full ServerInterface.
 type CombinedHandler struct {
 	*UserHandler
 	*AuthHandler
+	*ClassHandler
 }
 
-func NewCombinedHandler(user *UserHandler, auth *AuthHandler) *CombinedHandler {
-	return &CombinedHandler{UserHandler: user, AuthHandler: auth}
+func NewCombinedHandler(user *UserHandler, auth *AuthHandler, class *ClassHandler) *CombinedHandler {
+	return &CombinedHandler{UserHandler: user, AuthHandler: auth, ClassHandler: class}
 }
